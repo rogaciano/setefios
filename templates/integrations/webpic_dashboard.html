@@ -1,0 +1,413 @@
+﻿{% extends 'base.html' %}
+{% load app_formatters %}
+
+{% block title %}Webpic | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Integracoes{% endblock %}
+{% block page_title %}Webpic{% endblock %}
+
+{% block content %}
+    <section class="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
+        <article class="space-y-6">
+            <div class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Credenciais</p>
+                        <h2 class="mt-2 font-display text-2xl font-bold text-ink">Conexao com a Webpic</h2>
+                        <p class="mt-3 text-sm text-stone-600">Empresa e token agora saem do ambiente da aplicacao. A tela ficou somente com os IDs operacionais usados pela importacao e pela exportacao.</p>
+                    </div>
+                    <div class="rounded-2xl bg-stone-100 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                        {% if config.has_credentials %}Ativo via {{ config.credentials_source }}{% else %}Nao configurado{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-6 grid gap-4 rounded-3xl border border-stone-200 bg-white/70 p-4 text-sm text-stone-600">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Empresa API</p>
+                        <p class="mt-1 font-semibold text-ink">{{ config.resolved_api_company|default:'Nao informada' }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Token</p>
+                        <p class="mt-1 font-semibold text-ink">{% if config.resolved_api_token %}Configurado{% else %}Nao informado{% endif %}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Configuracao operacional</p>
+                    <h2 class="mt-2 font-display text-2xl font-bold text-ink">IDs da integracao</h2>
+                    <p class="mt-3 text-sm text-stone-600">Para importar produtos basta definir a tabela de preco. Os demais IDs entram no fluxo de exportacao de pedidos.</p>
+                    <p class="mt-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Clique em uma linha das grades ao lado para preencher o ID automaticamente.</p>
+                </div>
+
+                <form method="post" class="mt-6 grid gap-5 md:grid-cols-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_config">
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Tabela de preco</label>
+                        {{ form.price_table_id }}
+                        {% if form.price_table_id.errors %}<p class="mt-2 text-sm text-red-600">{{ form.price_table_id.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2 rounded-3xl border border-stone-200 bg-white/70 px-4 py-4">
+                        <label class="flex items-start gap-3 text-sm text-stone-700">
+                            {{ form.import_products_without_price }}
+                            <span>
+                                <span class="block font-semibold text-ink">Importar produtos sem preco valido</span>
+                                <span class="mt-1 block text-stone-500">Quando marcado, produtos com grade mas sem valor na Webpic entram no catalogo com preco zero e podem ser ajustados depois.</span>
+                            </span>
+                        </label>
+                        {% if form.import_products_without_price.errors %}<p class="mt-2 text-sm text-red-600">{{ form.import_products_without_price.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Funcionario</label>
+                        {{ form.employee_id }}
+                        {% if form.employee_id.errors %}<p class="mt-2 text-sm text-red-600">{{ form.employee_id.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Representante</label>
+                        {{ form.representative_id }}
+                        {% if form.representative_id.errors %}<p class="mt-2 text-sm text-red-600">{{ form.representative_id.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Grupo de clientes</label>
+                        {{ form.client_group_id }}
+                        {% if form.client_group_id.errors %}<p class="mt-2 text-sm text-red-600">{{ form.client_group_id.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="text-sm font-semibold text-stone-700">Conta corrente</label>
+                        {{ form.current_account_id }}
+                        {% if form.current_account_id.errors %}<p class="mt-2 text-sm text-red-600">{{ form.current_account_id.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    {% if form.non_field_errors %}
+                        <div class="md:col-span-2 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+                    {% endif %}
+                    <div class="md:col-span-2 flex gap-3">
+                        <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Salvar configuracao</button>
+                        <a href="{% url 'integrations:webpic_dashboard' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Atualizar opcoes</a>
+                    </div>
+                </form>
+            </div>
+
+            <div class="glass-panel rounded-[2rem] p-6">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Fila de exportacao</p>
+                        <h2 class="mt-2 font-display text-2xl font-bold text-ink">Pedidos pendentes</h2>
+                    </div>
+                    <div class="rounded-2xl bg-stone-100 px-4 py-2 text-sm font-semibold text-ink">{{ pending_order_total }}</div>
+                </div>
+                <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+                    <table class="min-w-full divide-y divide-stone-200 text-sm">
+                        <thead class="bg-stone-50 text-left text-stone-500">
+                            <tr>
+                                <th class="px-4 py-3 font-semibold">Pedido</th>
+                                <th class="px-4 py-3 font-semibold">Cliente</th>
+                                <th class="px-4 py-3 font-semibold">Total</th>
+                                <th class="px-4 py-3 font-semibold">Payload</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stone-100">
+                            {% for order in pending_orders %}
+                                <tr>
+                                    <td class="px-4 py-3 font-semibold text-ink">#{{ order.pk }}</td>
+                                    <td class="px-4 py-3">{{ order.buyer_company.trade_name|default:order.buyer_company.legal_name }}</td>
+                                    <td class="px-4 py-3 font-semibold text-forest">{{ order.total_amount|brl }}</td>
+                                    <td class="px-4 py-3">
+                                        <a href="{% url 'integrations:webpic_order_payload' order.pk %}" target="_blank" class="rounded-2xl border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100">Ver JSON</a>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-4 py-8 text-center text-stone-500">Nao ha pedidos pendentes para exportacao.</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </article>
+
+        <article class="space-y-6">
+            <div class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Operacao</p>
+                        <h2 class="mt-2 font-display text-2xl font-bold text-ink">Importar e exportar</h2>
+                        <p class="mt-3 text-sm text-stone-600">A importacao traz produtos acabados da Webpic para o catalogo global. A exportacao envia apenas pedidos ainda nao integrados.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="import_products">
+                            <button type="submit" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Importar produtos</button>
+                        </form>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="export_orders">
+                            <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Exportar pedidos</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            {% if options_error %}
+                <div class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">{{ options_error }}</div>
+            {% endif %}
+
+            {% if reference_options.price_tables or reference_options.employees or reference_options.representatives or reference_options.client_groups or reference_options.current_accounts %}
+                <div class="grid gap-4 md:grid-cols-2">
+                    <section class="glass-panel rounded-[2rem] p-5">
+                        <h3 class="font-display text-xl font-bold text-ink">Tabelas de preco</h3>
+                        <div class="mt-4 max-h-64 overflow-auto rounded-3xl border border-stone-200 bg-white/70">
+                            <table class="min-w-full divide-y divide-stone-200 text-sm" data-picker-input="id_price_table_id">
+                                <thead class="bg-stone-50 text-left text-stone-500">
+                                    <tr><th class="px-4 py-3 font-semibold">ID</th><th class="px-4 py-3 font-semibold">Codigo</th><th class="px-4 py-3 font-semibold">Descricao</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-stone-100">
+                                    {% for row in reference_options.price_tables %}
+                                        <tr class="picker-row" tabindex="0" role="button" data-picker-value="{{ row.Id }}"><td class="px-4 py-3">{{ row.Id }}</td><td class="px-4 py-3">{{ row.Codigo }}</td><td class="px-4 py-3">{{ row.Descricao }}</td></tr>
+                                    {% empty %}
+                                        <tr><td colspan="3" class="px-4 py-6 text-center text-stone-500">Nenhuma tabela retornada.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <section class="glass-panel rounded-[2rem] p-5">
+                        <h3 class="font-display text-xl font-bold text-ink">Funcionarios</h3>
+                        <div class="mt-4 max-h-64 overflow-auto rounded-3xl border border-stone-200 bg-white/70">
+                            <table class="min-w-full divide-y divide-stone-200 text-sm" data-picker-input="id_employee_id">
+                                <thead class="bg-stone-50 text-left text-stone-500">
+                                    <tr><th class="px-4 py-3 font-semibold">ID</th><th class="px-4 py-3 font-semibold">Nome</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-stone-100">
+                                    {% for row in reference_options.employees %}
+                                        <tr class="picker-row" tabindex="0" role="button" data-picker-value="{{ row.Id }}"><td class="px-4 py-3">{{ row.Id }}</td><td class="px-4 py-3">{{ row.Nome }}</td></tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="px-4 py-6 text-center text-stone-500">Nenhum funcionario retornado.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <section class="glass-panel rounded-[2rem] p-5">
+                        <h3 class="font-display text-xl font-bold text-ink">Representantes</h3>
+                        <div class="mt-4 max-h-64 overflow-auto rounded-3xl border border-stone-200 bg-white/70">
+                            <table class="min-w-full divide-y divide-stone-200 text-sm" data-picker-input="id_representative_id">
+                                <thead class="bg-stone-50 text-left text-stone-500">
+                                    <tr><th class="px-4 py-3 font-semibold">ID</th><th class="px-4 py-3 font-semibold">Nome</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-stone-100">
+                                    {% for row in reference_options.representatives %}
+                                        <tr class="picker-row" tabindex="0" role="button" data-picker-value="{{ row.Id }}"><td class="px-4 py-3">{{ row.Id }}</td><td class="px-4 py-3">{{ row.Nome }}</td></tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="px-4 py-6 text-center text-stone-500">Nenhum representante retornado.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <section class="glass-panel rounded-[2rem] p-5">
+                        <h3 class="font-display text-xl font-bold text-ink">Grupo de clientes</h3>
+                        <div class="mt-4 max-h-64 overflow-auto rounded-3xl border border-stone-200 bg-white/70">
+                            <table class="min-w-full divide-y divide-stone-200 text-sm" data-picker-input="id_client_group_id">
+                                <thead class="bg-stone-50 text-left text-stone-500">
+                                    <tr><th class="px-4 py-3 font-semibold">ID</th><th class="px-4 py-3 font-semibold">Descricao</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-stone-100">
+                                    {% for row in reference_options.client_groups %}
+                                        <tr class="picker-row" tabindex="0" role="button" data-picker-value="{{ row.Id }}"><td class="px-4 py-3">{{ row.Id }}</td><td class="px-4 py-3">{{ row.Descricao }}</td></tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="px-4 py-6 text-center text-stone-500">Nenhum grupo retornado.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                    <section class="glass-panel rounded-[2rem] p-5 md:col-span-2">
+                        <h3 class="font-display text-xl font-bold text-ink">Contas correntes</h3>
+                        <div class="mt-4 max-h-64 overflow-auto rounded-3xl border border-stone-200 bg-white/70">
+                            <table class="min-w-full divide-y divide-stone-200 text-sm" data-picker-input="id_current_account_id">
+                                <thead class="bg-stone-50 text-left text-stone-500">
+                                    <tr><th class="px-4 py-3 font-semibold">ID</th><th class="px-4 py-3 font-semibold">Descricao</th></tr>
+                                </thead>
+                                <tbody class="divide-y divide-stone-100">
+                                    {% for row in reference_options.current_accounts %}
+                                        <tr class="picker-row" tabindex="0" role="button" data-picker-value="{{ row.Id }}"><td class="px-4 py-3">{{ row.Id }}</td><td class="px-4 py-3">{{ row.Descricao }}</td></tr>
+                                    {% empty %}
+                                        <tr><td colspan="2" class="px-4 py-6 text-center text-stone-500">Nenhuma conta retornada.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            {% endif %}
+
+            {% if result_kind == 'import' %}
+                <div class="glass-panel rounded-[2rem] p-6">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Resultado</p>
+                        <h2 class="mt-2 font-display text-2xl font-bold text-ink">Importacao de produtos</h2>
+                    </div>
+                    <div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+                        <div class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Retornados</p>
+                            <p class="mt-3 font-display text-3xl font-bold text-ink">{{ result.report.total_rows }}</p>
+                            <p class="mt-2 text-sm text-stone-500">Itens vindos da Webpic.</p>
+                        </div>
+                        <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">Importados</p>
+                            <p class="mt-3 font-display text-3xl font-bold text-emerald-700">{{ result.report.imported_total }}</p>
+                            <p class="mt-2 text-sm text-emerald-700">Produtos novos no catalogo.</p>
+                        </div>
+                        <div class="rounded-3xl border border-sky-200 bg-sky-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-sky-700">Atualizados</p>
+                            <p class="mt-3 font-display text-3xl font-bold text-sky-700">{{ result.report.updated_total }}</p>
+                            <p class="mt-2 text-sm text-sky-700">Produtos ja existentes revistos.</p>
+                        </div>
+                        <div class="rounded-3xl border border-violet-200 bg-violet-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-violet-700">Sem preco</p>
+                            <p class="mt-3 font-display text-3xl font-bold text-violet-700">{{ result.report.processed_without_price_total }}</p>
+                            <p class="mt-2 text-sm text-violet-700">Processados com preco zero.</p>
+                        </div>
+                        <div class="rounded-3xl border border-amber-200 bg-amber-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-amber-700">Ignorados sem preco</p>
+                            <p class="mt-3 font-display text-3xl font-bold text-amber-700">{{ result.report.skipped_no_price }}</p>
+                            <p class="mt-2 text-sm text-amber-700">Sem preco valido e bloqueados pela configuracao.</p>
+                        </div>
+                        <div class="rounded-3xl border border-stone-200 bg-stone-50 p-4">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Sem grade</p>
+                            <p class="mt-3 font-display text-3xl font-bold text-ink">{{ result.report.skipped_no_grades }}</p>
+                            <p class="mt-2 text-sm text-stone-500">Continuam fora da importacao automatica.</p>
+                        </div>
+                    </div>
+                    <div class="mt-4 rounded-2xl border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
+                        Ignorados no total: <strong class="text-ink">{{ result.report.skipped_total }}</strong>.
+                        {% if result.report.skipped_missing_reference %}
+                            Sem referencia: <strong class="text-ink">{{ result.report.skipped_missing_reference }}</strong>.
+                        {% endif %}
+                    </div>
+                    <div class="mt-6 grid gap-4 lg:grid-cols-2">
+                        <section class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                            <h3 class="font-semibold text-ink">Novos produtos</h3>
+                            <div class="mt-4 overflow-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="text-left text-stone-500">
+                                        <tr><th class="py-2 pr-3">Referencia</th><th class="py-2 pr-3">Descricao</th><th class="py-2">Grupo</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-stone-100">
+                                        {% for row in result.imported %}
+                                            <tr><td class="py-3 pr-3 font-semibold text-ink">{{ row.reference }}</td><td class="py-3 pr-3">{{ row.description }}</td><td class="py-3">{{ row.group }}</td></tr>
+                                        {% empty %}
+                                            <tr><td colspan="3" class="py-6 text-center text-stone-500">Nenhum produto novo importado.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                        <section class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                            <h3 class="font-semibold text-ink">Produtos atualizados</h3>
+                            <div class="mt-4 overflow-auto">
+                                <table class="min-w-full text-sm">
+                                    <thead class="text-left text-stone-500">
+                                        <tr><th class="py-2 pr-3">Referencia</th><th class="py-2 pr-3">Descricao</th><th class="py-2">Grupo</th></tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-stone-100">
+                                        {% for row in result.updated %}
+                                            <tr><td class="py-3 pr-3 font-semibold text-ink">{{ row.reference }}</td><td class="py-3 pr-3">{{ row.description }}</td><td class="py-3">{{ row.group }}</td></tr>
+                                        {% empty %}
+                                            <tr><td colspan="3" class="py-6 text-center text-stone-500">Nenhum produto atualizado.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if result_kind == 'export' %}
+                <div class="glass-panel rounded-[2rem] p-6">
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Resultado</p>
+                    <h2 class="mt-2 font-display text-2xl font-bold text-ink">Exportacao de pedidos</h2>
+                    <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+                        <table class="min-w-full divide-y divide-stone-200 text-sm">
+                            <thead class="bg-stone-50 text-left text-stone-500">
+                                <tr>
+                                    <th class="px-4 py-3 font-semibold">Pedido</th>
+                                    <th class="px-4 py-3 font-semibold">Status</th>
+                                    <th class="px-4 py-3 font-semibold">Mensagem</th>
+                                    <th class="px-4 py-3 font-semibold">Payload</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-stone-100">
+                                {% for row in result %}
+                                    <tr>
+                                        <td class="px-4 py-3 font-semibold text-ink">#{{ row.order_id }}</td>
+                                        <td class="px-4 py-3">
+                                            <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if row.status == 'success' %}bg-emerald-100 text-emerald-700{% else %}bg-red-100 text-red-700{% endif %}">
+                                                {{ row.status }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">{{ row.message }}</td>
+                                        <td class="px-4 py-3">
+                                            <a href="{% url 'integrations:webpic_order_payload' row.order_id %}" target="_blank" class="rounded-2xl border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100">Ver JSON</a>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="4" class="px-4 py-8 text-center text-stone-500">Nao havia pedidos para exportar.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        </article>
+    </section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        document.querySelectorAll("table[data-picker-input]").forEach((table) => {
+            const input = document.getElementById(table.dataset.pickerInput);
+            if (!input) {
+                return;
+            }
+
+            const rows = Array.from(table.querySelectorAll("tr[data-picker-value]"));
+            const sync = () => {
+                const currentValue = String(input.value || "").trim();
+                rows.forEach((row) => {
+                    row.classList.toggle("is-selected", currentValue !== "" && row.dataset.pickerValue === currentValue);
+                });
+            };
+
+            const selectRow = (row) => {
+                input.value = row.dataset.pickerValue;
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+                input.dispatchEvent(new Event("change", { bubbles: true }));
+                sync();
+                input.focus();
+            };
+
+            rows.forEach((row) => {
+                row.addEventListener("click", () => selectRow(row));
+                row.addEventListener("keydown", (event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        selectRow(row);
+                    }
+                });
+            });
+
+            input.addEventListener("input", sync);
+            input.addEventListener("change", sync);
+            sync();
+        });
+    });
+</script>
+{% endblock %}

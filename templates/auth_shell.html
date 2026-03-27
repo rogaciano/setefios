@@ -1,0 +1,73 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Acesso | Sistema de Vendas{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ["Manrope", "Segoe UI", "sans-serif"],
+                        display: ["Space Grotesk", "Manrope", "sans-serif"],
+                    },
+                    colors: {
+                        sand: "#f6efe7",
+                        ink: "#1b1a18",
+                        clay: "#c35b2c",
+                        forest: "#184c47",
+                    },
+                },
+            },
+        };
+    </script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body class="min-h-screen bg-sand font-sans text-ink antialiased">
+    <main class="grid min-h-screen lg:grid-cols-[1.15fr_0.85fr]">
+        <section class="relative hidden overflow-hidden lg:block">
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(195,91,44,0.18),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(24,76,71,0.2),_transparent_30%),linear-gradient(135deg,_#efe6db,_#f8f3ed)]"></div>
+            <div class="absolute inset-0 grid-fade"></div>
+            <div class="relative flex h-full flex-col justify-between p-12 xl:p-16">
+                <div>
+                    <p class="font-display text-3xl font-bold uppercase tracking-[0.2em] text-clay">Sete Fios</p>
+                    <p class="mt-4 max-w-xl text-4xl font-bold leading-tight text-ink">Nova base comercial com Django, Alpine e Tailwind.</p>
+                    <p class="mt-6 max-w-lg text-lg text-stone-600">A interface nova simplifica o legado de pedidos, deixando variantes de produto, seguranca e manutencao mais claras desde o inicio.</p>
+                </div>
+                <div class="grid max-w-xl grid-cols-2 gap-4 text-sm">
+                    <div class="rounded-3xl border border-white/70 bg-white/70 p-5 backdrop-blur">
+                        <p class="font-semibold text-ink">Autenticacao segura</p>
+                        <p class="mt-2 text-stone-600">Fluxo nativo do Django com troca e reset de senha.</p>
+                    </div>
+                    <div class="rounded-3xl border border-white/70 bg-white/70 p-5 backdrop-blur">
+                        <p class="font-semibold text-ink">Catalogo com variantes</p>
+                        <p class="mt-2 text-stone-600">Cada tecido trabalha por cor e unidade, sem grade fixa no cadastro.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section class="flex items-center justify-center px-5 py-10 sm:px-8 lg:px-12">
+            <div class="glass-panel w-full max-w-xl rounded-[2rem] p-8 sm:p-10">
+                {% if messages %}
+                    <div class="mb-6 space-y-3">
+                        {% for message in messages %}
+                            <div class="rounded-2xl border px-4 py-3 text-sm {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-700{% elif message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-700{% else %}border-stone-200 bg-white/80 text-stone-700{% endif %}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                {% block auth_content %}{% endblock %}
+            </div>
+        </section>
+    </main>
+</body>
+</html>
+

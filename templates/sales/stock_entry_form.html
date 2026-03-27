@@ -1,0 +1,460 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if entry %}Editar entrada{% else %}Nova entrada{% endif %} | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Estoque{% endblock %}
+{% block page_title %}{% if entry %}Editar entrada #{{ entry.pk }}{% else %}Nova entrada{% endif %}{% endblock %}
+
+{% block content %}
+    {{ product_catalog|json_script:"product-catalog" }}
+    <form method="post" class="grid gap-6 xl:grid-cols-[1fr_0.34fr]" x-data="entryBuilder()" x-init="init()">
+        {% csrf_token %}
+        <section class="space-y-6">
+            {% if imported_draft and not entry %}
+                <article class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                    <div class="rounded-3xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm text-emerald-800">
+                        <p class="font-semibold text-ink">Entrada montada a partir de {{ imported_draft.source_name }}</p>
+                        <p class="mt-2">Revise o fornecedor, os produtos e os rolos antes de salvar.</p>
+                        {% if imported_draft.note_number %}<p class="mt-2">Nota de origem: <span class="font-semibold">{{ imported_draft.note_number }}</span></p>{% endif %}
+                    </div>
+                </article>
+            {% endif %}
+
+            <article class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <div class="mb-6 rounded-3xl border border-stone-200 bg-white/70 p-4 text-sm text-stone-600">
+                    <p class="font-semibold text-ink">Entrada agrupada por produto</p>
+                    <p class="mt-2">Cada linha representa um tecido. As cores e os rolos individuais ficam dentro do modal da linha, e o total mostrado e a soma dos rolos de cada cor.</p>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Fornecedor</label>
+                        {{ form.supplier }}
+                        {% if form.supplier.errors %}<p class="mt-2 text-sm text-red-600">{{ form.supplier.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Data da entrada</label>
+                        {{ form.received_at }}
+                        {% if form.received_at.errors %}<p class="mt-2 text-sm text-red-600">{{ form.received_at.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="text-sm font-semibold text-stone-700">Observacoes</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}<p class="mt-2 text-sm text-red-600">{{ form.notes.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </article>
+
+            <article class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="font-display text-2xl font-bold text-ink">Produtos da entrada</h2>
+                        <p class="mt-2 max-w-2xl text-sm text-stone-600">Selecione o produto e abra o modal para distribuir os rolos por cor. O codigo de cada rolo continua sendo gerado automaticamente ao salvar.</p>
+                    </div>
+                </div>
+
+                {{ formset.management_form }}
+                {% if formset.non_form_errors %}
+                    <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ formset.non_form_errors }}</div>
+                {% endif %}
+
+                <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+                    <table class="min-w-full divide-y divide-stone-200 text-sm">
+                        <thead class="bg-stone-50 text-left text-stone-500">
+                            <tr>
+                                <th class="px-4 py-3 font-semibold">Produto</th>
+                                <th class="px-4 py-3 font-semibold">Cores e totais</th>
+                                <th class="px-4 py-3 font-semibold">Rolos</th>
+                                <th class="px-4 py-3 font-semibold">Acoes</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-stone-100">
+                            {% for row_form in formset %}
+                                <tr data-entry-row data-row-index="{{ forloop.counter0 }}">
+                                    <td class="px-4 py-4 align-top">
+                                        {{ row_form.product }}
+                                        {{ row_form.rolls_payload }}
+                                        {% if row_form.product.errors %}<p class="mt-2 text-xs text-red-600">{{ row_form.product.errors|join:', ' }}</p>{% endif %}
+                                    </td>
+                                    <td class="px-4 py-4 align-top">
+                                        <div class="flex flex-wrap gap-2" x-show="rowSummaries({{ forloop.counter0 }}).length">
+                                            <template x-for="summary in rowSummaries({{ forloop.counter0 }})" :key="summary.variant_id">
+                                                <span class="inline-flex items-center gap-2 rounded-full bg-stone-100 px-3 py-2 text-xs font-semibold text-stone-700">
+                                                    <span x-text="summary.color_name"></span>
+                                                    <span class="text-stone-500" x-text="summary.total_label + ' ' + summary.unit_code"></span>
+                                                </span>
+                                            </template>
+                                        </div>
+                                        <p class="text-sm text-stone-500" x-show="!rowSummaries({{ forloop.counter0 }}).length">Nenhum rolo informado para este produto.</p>
+                                        {% if row_form.rolls_payload.errors %}<p class="mt-2 text-xs text-red-600">{{ row_form.rolls_payload.errors|join:', ' }}</p>{% endif %}
+                                    </td>
+                                    <td class="px-4 py-4 align-top">
+                                        <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-50" @click="openModal({{ forloop.counter0 }})" :disabled="!hasProduct({{ forloop.counter0 }})">Gerenciar rolos</button>
+                                        <p class="mt-3 text-sm text-stone-500"><span x-text="rowRollCount({{ forloop.counter0 }})"></span> rolo(s)</p>
+                                    </td>
+                                    <td class="px-4 py-4 align-top">
+                                        <button type="button" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100" @click="clearRow({{ forloop.counter0 }})">Limpar linha</button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+
+        <aside class="space-y-6">
+            <section class="glass-panel rounded-[2rem] p-6">
+                <h2 class="font-display text-xl font-bold text-ink">Acoes</h2>
+                <a href="{% url 'sales:stock_entry_import' %}" class="mt-6 inline-flex w-full items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Importar documento</a>
+                <button type="submit" class="mt-3 inline-flex w-full items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Salvar entrada</button>
+                {% if entry %}
+                    <a href="{% url 'sales:stock_entry_labels' entry.pk %}" target="_blank" class="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Imprimir etiquetas</a>
+                {% endif %}
+                <a href="{% url 'sales:stock_entry_list' %}" class="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Voltar</a>
+                {% if form.non_field_errors %}
+                    <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+                {% endif %}
+            </section>
+
+            <section class="glass-panel rounded-[2rem] p-6 text-sm text-stone-600">
+                <h2 class="font-display text-xl font-bold text-ink">Como funciona</h2>
+                <p class="mt-3">O produto fica na grade principal. Dentro do modal, cada cor recebe quantos rolos forem necessarios.</p>
+                <p class="mt-3">Cada rolo continua unico no sistema, mesmo que repita a mesma quantidade de outro rolo.</p>
+            </section>
+
+            {% if entry and existing_rolls %}
+                <section class="glass-panel rounded-[2rem] p-6">
+                    <h2 class="font-display text-xl font-bold text-ink">Rolos salvos</h2>
+                    <div class="mt-4 space-y-3 max-h-[30rem] overflow-y-auto pr-1">
+                        {% for roll in existing_rolls %}
+                            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="font-semibold text-ink">{{ roll.identifier }}</p>
+                                        <p class="mt-1 text-sm text-stone-600">{{ roll.variant.product.reference }} | {{ roll.variant.color.name }}</p>
+                                        <p class="mt-1 text-sm text-stone-500">Saldo {{ roll.available_quantity|floatformat:3 }} {{ roll.unit_code }}</p>
+                                    </div>
+                                    <a href="{% url 'sales:roll_label' roll.pk %}" target="_blank" class="rounded-2xl border border-stone-300 px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-100">Etiqueta</a>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </section>
+            {% endif %}
+        </aside>
+
+        <div x-show="isModalOpen()" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4 py-6">
+            <div class="absolute inset-0 bg-ink/50" @click="closeModal()"></div>
+            <div class="relative z-10 max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-[2rem] border border-stone-200 bg-sand shadow-panel">
+                <div class="flex items-start justify-between gap-4 border-b border-stone-200 bg-white/80 px-6 py-5">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">Rolos do produto</p>
+                        <h3 class="mt-2 font-display text-2xl font-bold text-ink" x-text="activeProductLabel()"></h3>
+                        <p class="mt-2 text-sm text-stone-600" x-text="activeProductSubtitle()"></p>
+                    </div>
+                    <button type="button" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100" @click="closeModal()">Fechar</button>
+                </div>
+
+                <div class="max-h-[70vh] overflow-y-auto px-6 py-6">
+                    <template x-if="!activeVariants().length">
+                        <div class="rounded-3xl border border-dashed border-stone-300 bg-white/70 px-6 py-12 text-center text-stone-500">Selecione um produto na linha para cadastrar os rolos.</div>
+                    </template>
+
+                    <div class="space-y-5" x-show="activeVariants().length">
+                        <template x-for="variant in activeVariants()" :key="variant.id">
+                            <section class="rounded-3xl border border-stone-200 bg-white/80 p-5">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                    <div>
+                                        <h4 class="font-display text-xl font-bold text-ink" x-text="variant.color_name"></h4>
+                                        <p class="mt-1 text-sm text-stone-500" x-text="variant.unit_display"></p>
+                                    </div>
+                                    <div class="flex items-center gap-3">
+                                        <div class="rounded-2xl bg-stone-100 px-4 py-3 text-right">
+                                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Total</p>
+                                            <p class="mt-1 font-display text-xl font-bold text-forest" x-text="variantTotalLabel(variant.id) + ' ' + variant.unit_code"></p>
+                                        </div>
+                                        <button type="button" class="rounded-2xl bg-clay px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]" @click="addRoll(variant.id)">Adicionar rolo</button>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 space-y-3">
+                                    <template x-if="!rollsForVariant(variant.id).length">
+                                        <div class="rounded-2xl border border-dashed border-stone-300 px-4 py-6 text-sm text-stone-500">Nenhum rolo cadastrado nesta cor.</div>
+                                    </template>
+                                    <div class="hidden grid-cols-[180px_170px_1fr_auto] gap-4 px-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500 lg:grid" x-show="rollsForVariant(variant.id).length">
+                                        <span>Codigo</span>
+                                        <span>Quantidade</span>
+                                        <span>Observacao</span>
+                                        <span class="text-right">Acao</span>
+                                    </div>
+                                    <template x-for="roll in rollsForVariant(variant.id)" :key="roll._key">
+                                        <article class="grid gap-3 rounded-3xl border border-stone-200 bg-sand/70 p-4 lg:grid-cols-[180px_170px_1fr_auto] lg:items-center">
+                                            <div class="rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-ink" x-text="roll.identifier || 'Gerado ao salvar'"></div>
+                                            <input type="number" min="0.001" step="0.001" class="block w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200" :value="roll.quantity" @input="updateRoll(roll._key, 'quantity', $event.target.value)" placeholder="Quantidade">
+                                            <input type="text" class="block w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200" :value="roll.notes" @input="updateRoll(roll._key, 'notes', $event.target.value)" placeholder="Observacao opcional">
+                                            <div class="text-right">
+                                                <button type="button" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100" @click="removeRoll(roll._key)">Remover</button>
+                                            </div>
+                                        </article>
+                                    </template>
+                                </div>
+                            </section>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="border-t border-stone-200 bg-white/80 px-6 py-4 text-right">
+                    <button type="button" class="rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]" @click="closeModal()">Concluir</button>
+                </div>
+            </div>
+        </div>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function entryBuilder() {
+        const catalogNode = document.getElementById("product-catalog");
+        const catalog = catalogNode ? JSON.parse(catalogNode.textContent) : [];
+        const productMap = new Map(catalog.map((product) => [Number(product.id), product]));
+
+        return {
+            uid: 0,
+            activeIndex: null,
+            rows: [],
+            init() {
+                this.rows = Array.from(this.$root.querySelectorAll("[data-entry-row]")).map((row, index) => {
+                    const productInput = row.querySelector('select[name$="-product"]');
+                    const rollsInput = row.querySelector('input[name$="-rolls_payload"]');
+                    return {
+                        index,
+                        productInput,
+                        rollsInput,
+                        productId: this.toInt(productInput ? productInput.value : ""),
+                        rolls: this.normalizeRolls(this.parsePayload(rollsInput ? rollsInput.value : "[]")),
+                    };
+                });
+
+                this.rows.forEach((row, index) => {
+                    if (row.productInput) {
+                        row.productInput.addEventListener("change", (event) => {
+                            this.handleProductChange(index, event.target.value);
+                        });
+                    }
+                    this.syncRow(index, false);
+                });
+            },
+            parsePayload(rawValue) {
+                try {
+                    return JSON.parse(rawValue || "[]");
+                } catch (error) {
+                    return [];
+                }
+            },
+            normalizeRolls(items) {
+                if (!Array.isArray(items)) {
+                    return [];
+                }
+                return items.map((item) => ({
+                    _key: item.id ? `existing-${item.id}` : `new-${++this.uid}`,
+                    id: this.toInt(item.id),
+                    identifier: String(item.identifier || ""),
+                    variant_id: this.toInt(item.variant_id),
+                    quantity: String(item.quantity || ""),
+                    notes: String(item.notes || ""),
+                }));
+            },
+            toInt(value) {
+                const parsed = parseInt(value, 10);
+                return Number.isNaN(parsed) ? null : parsed;
+            },
+            parseNumber(value) {
+                const parsed = parseFloat(String(value || "0").replace(",", "."));
+                return Number.isNaN(parsed) ? 0 : parsed;
+            },
+            rowState(index) {
+                return this.rows[index] || null;
+            },
+            hasProduct(index) {
+                const row = this.rowState(index);
+                return !!(row && row.productId);
+            },
+            currentProduct(index) {
+                const row = this.rowState(index);
+                return row && row.productId ? productMap.get(row.productId) : null;
+            },
+            rowSummaries(index) {
+                const row = this.rowState(index);
+                const product = this.currentProduct(index);
+                if (!row || !product) {
+                    return [];
+                }
+
+                const grouped = new Map();
+                row.rolls.forEach((roll) => {
+                    const variant = product.variants.find((item) => Number(item.id) === Number(roll.variant_id));
+                    if (!variant) {
+                        return;
+                    }
+                    const summary = grouped.get(variant.id) || {
+                        variant_id: variant.id,
+                        color_name: variant.color_name,
+                        unit_code: variant.unit_code,
+                        total: 0,
+                    };
+                    summary.total += this.parseNumber(roll.quantity);
+                    grouped.set(variant.id, summary);
+                });
+
+                return Array.from(grouped.values()).map((summary) => ({
+                    ...summary,
+                    total_label: summary.total.toFixed(3).replace(".", ","),
+                }));
+            },
+            rowRollCount(index) {
+                const row = this.rowState(index);
+                if (!row) {
+                    return 0;
+                }
+                return row.rolls.filter((roll) => roll.id || String(roll.quantity || "").trim()).length;
+            },
+            handleProductChange(index, rawValue) {
+                const row = this.rowState(index);
+                if (!row) {
+                    return;
+                }
+
+                const nextProductId = this.toInt(rawValue);
+                if (row.rolls.length && row.productId && row.productId !== nextProductId) {
+                    const confirmed = window.confirm("Trocar o produto vai limpar os rolos desta linha. Deseja continuar?");
+                    if (!confirmed) {
+                        row.productInput.value = row.productId || "";
+                        return;
+                    }
+                    row.rolls = [];
+                }
+
+                row.productId = nextProductId;
+                this.syncRow(index);
+            },
+            clearRow(index) {
+                const row = this.rowState(index);
+                if (!row) {
+                    return;
+                }
+                row.rolls = [];
+                row.productId = null;
+                if (row.productInput) {
+                    row.productInput.value = "";
+                }
+                this.syncRow(index);
+            },
+            openModal(index) {
+                if (!this.hasProduct(index)) {
+                    return;
+                }
+                this.activeIndex = index;
+            },
+            closeModal() {
+                this.activeIndex = null;
+            },
+            isModalOpen() {
+                return this.activeIndex !== null;
+            },
+            activeProduct() {
+                return this.activeIndex === null ? null : this.currentProduct(this.activeIndex);
+            },
+            activeProductLabel() {
+                const product = this.activeProduct();
+                return product ? product.label : "";
+            },
+            activeProductSubtitle() {
+                const product = this.activeProduct();
+                return product ? `Controle por ${product.unit_display.toLowerCase()}. Cada cor acumula a soma dos rolos cadastrados.` : "";
+            },
+            activeVariants() {
+                const product = this.activeProduct();
+                return product ? product.variants : [];
+            },
+            rollsForVariant(variantId) {
+                const row = this.rowState(this.activeIndex);
+                if (!row) {
+                    return [];
+                }
+                return row.rolls.filter((roll) => Number(roll.variant_id) === Number(variantId));
+            },
+            addRoll(variantId) {
+                const row = this.rowState(this.activeIndex);
+                if (!row) {
+                    return;
+                }
+                row.rolls.push({
+                    _key: `new-${++this.uid}`,
+                    id: null,
+                    identifier: "",
+                    variant_id: Number(variantId),
+                    quantity: "",
+                    notes: "",
+                });
+                this.syncRow(this.activeIndex);
+            },
+            updateRoll(key, field, value) {
+                const row = this.rowState(this.activeIndex);
+                if (!row) {
+                    return;
+                }
+                const roll = row.rolls.find((item) => item._key === key);
+                if (!roll) {
+                    return;
+                }
+                roll[field] = value;
+                this.syncRow(this.activeIndex);
+            },
+            removeRoll(key) {
+                const row = this.rowState(this.activeIndex);
+                if (!row) {
+                    return;
+                }
+                row.rolls = row.rolls.filter((item) => item._key !== key);
+                this.syncRow(this.activeIndex);
+            },
+            variantTotalLabel(variantId) {
+                const summary = this.rowSummaries(this.activeIndex).find((item) => Number(item.variant_id) === Number(variantId));
+                return summary ? summary.total_label : "0,000";
+            },
+            syncRow(index, dispatchInput = true) {
+                const row = this.rowState(index);
+                if (!row || !row.rollsInput) {
+                    return;
+                }
+
+                const product = this.currentProduct(index);
+                const allowedVariants = new Set((product ? product.variants : []).map((variant) => Number(variant.id)));
+                row.rolls = row.rolls.filter((roll) => {
+                    if (!roll.variant_id) {
+                        return false;
+                    }
+                    return allowedVariants.size === 0 || allowedVariants.has(Number(roll.variant_id));
+                });
+
+                const payload = row.rolls
+                    .filter((roll) => roll.id || String(roll.quantity || "").trim() || String(roll.notes || "").trim())
+                    .map((roll) => ({
+                        id: roll.id || "",
+                        identifier: roll.identifier || "",
+                        variant_id: roll.variant_id || "",
+                        quantity: String(roll.quantity || "").trim(),
+                        notes: String(roll.notes || "").trim(),
+                    }));
+
+                row.rollsInput.value = payload.length ? JSON.stringify(payload) : "";
+                if (dispatchInput) {
+                    row.rollsInput.dispatchEvent(new Event("input", { bubbles: true }));
+                    row.rollsInput.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+            },
+        };
+    }
+</script>
+{% endblock %}

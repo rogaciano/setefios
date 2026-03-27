@@ -1,0 +1,59 @@
+﻿{% extends 'base.html' %}
+{% load app_formatters %}
+
+{% block title %}Produtos | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Catalogo{% endblock %}
+{% block page_title %}Produtos{% endblock %}
+
+{% block content %}
+    <section class="glass-panel rounded-[2rem] p-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h2 class="font-display text-2xl font-bold text-ink">Catalogo de produtos</h2>
+                <p class="mt-2 max-w-2xl text-sm text-stone-600">Cada tecido agora trabalha com variantes por cor, e a unidade define como o estoque sera controlado no sistema.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <form method="get" class="flex gap-3">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Buscar por referencia ou descricao" class="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200 sm:w-80">
+                    <button type="submit" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Buscar</button>
+                </form>
+                <a href="{% url 'sales:product_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Novo produto</a>
+            </div>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <thead class="bg-stone-50 text-left text-stone-500">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Referencia</th>
+                        <th class="px-4 py-3 font-semibold">Descricao</th>
+                        <th class="px-4 py-3 font-semibold">Categoria</th>
+                        <th class="px-4 py-3 font-semibold">Unidade</th>
+                        <th class="px-4 py-3 font-semibold">Variantes</th>
+                        <th class="px-4 py-3 font-semibold">Preco</th>
+                        <th class="px-4 py-3 font-semibold"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                    {% for product in products %}
+                        <tr>
+                            <td class="px-4 py-4 font-semibold text-ink">{{ product.reference }}</td>
+                            <td class="px-4 py-4">{{ product.description }}</td>
+                            <td class="px-4 py-4">{{ product.category.name }}</td>
+                            <td class="px-4 py-4 text-stone-600">{{ product.get_unit_display }}</td>
+                            <td class="px-4 py-4 text-stone-600">{{ product.variants.count }} variante(s) cadastrada(s)</td>
+                            <td class="px-4 py-4 font-semibold text-forest">{{ product.price|brl }}</td>
+                            <td class="px-4 py-4 text-right">
+                                <a href="{% url 'sales:product_update' product.pk %}" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Editar</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-4 py-10 text-center text-stone-500">Nenhum produto cadastrado ainda.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

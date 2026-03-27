@@ -1,0 +1,137 @@
+﻿{% load static %}
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ label_title }} | Sistema de Vendas</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        .label-sheet {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .label-card {
+            break-inside: avoid;
+        }
+
+        @media print {
+            .print-toolbar {
+                display: none;
+            }
+
+            body {
+                background: #fff;
+            }
+
+            .label-card {
+                box-shadow: none;
+                border-color: rgba(62, 49, 36, 0.16);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-sand px-4 py-6 text-ink sm:px-6">
+    <div class="mx-auto max-w-7xl">
+        <header class="print-toolbar mb-6 flex flex-col gap-4 rounded-[2rem] border border-stone-200 bg-white/80 px-6 py-5 shadow-panel lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Etiquetas</p>
+                <h1 class="mt-2 font-display text-3xl font-bold text-ink">{{ label_title }}</h1>
+                {% if label_subtitle %}<p class="mt-2 text-sm text-stone-600">{{ label_subtitle }}</p>{% endif %}
+            </div>
+            <div class="flex gap-3">
+                <button type="button" onclick="window.print()" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Imprimir</button>
+                <button type="button" onclick="window.close()" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Fechar</button>
+            </div>
+        </header>
+
+        <main class="label-sheet">
+            {% for roll in rolls %}
+                <article class="label-card glass-panel rounded-[2rem] p-5">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">Rolo de tecido</p>
+                            <h2 class="mt-2 font-display text-2xl font-bold text-ink">{{ roll.identifier }}</h2>
+                            <p class="mt-1 text-sm text-stone-600">{{ roll.variant.product.reference }} | {{ roll.variant.product.description }}</p>
+                            <p class="mt-1 text-sm text-stone-600">{{ roll.variant.color.name }} | {{ roll.unit_display }}</p>
+                        </div>
+                        <div class="rounded-3xl border border-stone-200 bg-white/80 px-4 py-3 text-right">
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Saldo</p>
+                            <p class="mt-2 font-display text-2xl font-bold text-forest">{{ roll.available_quantity|floatformat:3 }}</p>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{{ roll.unit_code }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid gap-4 md:grid-cols-[1fr_112px] md:items-end">
+                        <div class="rounded-3xl border border-stone-200 bg-white/80 px-4 py-4">
+                            <svg class="barcode h-16 w-full" data-barcode-value="{{ roll.barcode_value }}"></svg>
+                            <p class="mt-3 text-center text-xs font-semibold tracking-[0.24em] text-stone-500">{{ roll.barcode_value }}</p>
+                        </div>
+                        <div class="flex justify-center rounded-3xl border border-stone-200 bg-white/80 p-3">
+                            <canvas class="qr-code" width="112" height="112" data-qr-value="{{ roll.qr_payload }}"></canvas>
+                        </div>
+                    </div>
+                    <div class="mt-5 grid gap-3 rounded-3xl border border-stone-200 bg-white/70 p-4 text-sm text-stone-600 sm:grid-cols-2">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Fornecedor</p>
+                            <p class="mt-1 font-semibold text-ink">{{ roll.stock_entry.supplier.trade_name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Entrada</p>
+                            <p class="mt-1 font-semibold text-ink">#{{ roll.stock_entry.pk }} em {{ roll.stock_entry.received_at|date:'d/m/Y' }}</p>
+                        </div>
+                        {% if roll.notes %}
+                            <div class="sm:col-span-2">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Observacao</p>
+                                <p class="mt-1 text-ink">{{ roll.notes }}</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            document.querySelectorAll(".barcode").forEach((element) => {
+                const value = element.dataset.barcodeValue;
+                if (!value || typeof JsBarcode === "undefined") {
+                    return;
+                }
+                JsBarcode(element, value, {
+                    format: "CODE128",
+                    displayValue: false,
+                    height: 52,
+                    margin: 0,
+                    width: 1.5,
+                });
+            });
+
+            document.querySelectorAll(".qr-code").forEach((element) => {
+                const value = element.dataset.qrValue;
+                if (!value || typeof QRious === "undefined") {
+                    return;
+                }
+                new QRious({
+                    element,
+                    value,
+                    size: 112,
+                    level: "H",
+                });
+            });
+        });
+    </script>
+</body>
+</html>
+

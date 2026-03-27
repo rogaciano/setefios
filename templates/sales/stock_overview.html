@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block title %}Estoque | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Estoque{% endblock %}
+{% block page_title %}Consulta de estoque{% endblock %}
+
+{% block content %}
+    <section class="glass-panel rounded-[2rem] p-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h2 class="font-display text-2xl font-bold text-ink">Estoque por rolo e por produto</h2>
+                <p class="mt-2 max-w-3xl text-sm text-stone-600">A visao consolidada ajuda a venda e agora considera ajustes, devolucoes e reservas no saldo fisico real de cada rolo.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <a href="{% url 'sales:stock_entry_list' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Entradas</a>
+                <a href="{% url 'sales:stock_movement_list' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Movimentacoes</a>
+                <a href="{% url 'sales:stock_entry_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Nova entrada</a>
+            </div>
+        </div>
+
+        <form method="get" class="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px_auto]">
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar por rolo, referencia, descricao, cor ou fornecedor" class="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+            <select name="unit" class="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                <option value="">Todas as unidades</option>
+                {% for value, label in unit_choices %}
+                    <option value="{{ value }}" {% if unit == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <select name="status" class="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                <option value="">Todos os status</option>
+                <option value="available" {% if status == 'available' %}selected{% endif %}>Com saldo</option>
+                <option value="reserved" {% if status == 'reserved' %}selected{% endif %}>Reservados</option>
+                <option value="sold_out" {% if status == 'sold_out' %}selected{% endif %}>Zerados</option>
+            </select>
+            <div class="flex gap-3">
+                <button type="submit" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Filtrar</button>
+                <a href="{% url 'sales:stock_overview' %}" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Limpar</a>
+            </div>
+        </form>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Produto/cor</p>
+                <p class="mt-2 font-display text-3xl font-bold text-ink">{{ summary.variant_total }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Rolos totais</p>
+                <p class="mt-2 font-display text-3xl font-bold text-ink">{{ summary.roll_total }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Com saldo</p>
+                <p class="mt-2 font-display text-3xl font-bold text-forest">{{ summary.available_roll_total }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Reservados</p>
+                <p class="mt-2 font-display text-3xl font-bold text-clay">{{ summary.reserved_roll_total }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Zerados</p>
+                <p class="mt-2 font-display text-3xl font-bold text-stone-500">{{ summary.sold_out_roll_total }}</p>
+            </article>
+        </div>
+    </section>
+
+    <div class="mt-6 grid gap-6 xl:grid-cols-[0.84fr_1.16fr]">
+        <section class="glass-panel rounded-[2rem] p-6">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">Consolidado</p>
+                <h2 class="mt-2 font-display text-2xl font-bold text-ink">Produto e cor</h2>
+                <p class="mt-2 text-sm text-stone-600">Abra um produto para ver as cores abaixo. Clique no produto ou na cor para filtrar os rolos ao lado sem precisar ler o estoque inteiro de uma vez.</p>
+            </div>
+
+            <div class="mt-6 space-y-4">
+                {% for product in product_groups %}
+                    <details class="rounded-3xl border {% if product.is_selected %}border-clay/40 bg-white{% else %}border-stone-200 bg-white/70{% endif %}">
+                        <summary class="list-none cursor-pointer p-5">
+                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="inline-flex rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">{{ product.reference }}</span>
+                                        {% if product.is_selected %}
+                                            <span class="inline-flex rounded-full bg-clay/10 px-3 py-1 text-xs font-semibold text-clay">Ativo</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mt-3 font-semibold text-ink">{{ product.description }}</p>
+                                    <p class="mt-2 text-sm text-stone-500">{{ product.color_total }} cor(es) | {{ product.roll_total }} rolo(s) | {{ product.unit_display }}</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <a href="{{ product.select_url }}" class="inline-flex items-center justify-center rounded-2xl px-4 py-3 text-sm font-semibold transition {% if product.is_selected and not active_color %}bg-clay text-white hover:bg-[#a94f26]{% else %}border border-stone-300 text-stone-700 hover:bg-stone-100{% endif %}">Ver rolos</a>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                <div class="rounded-2xl bg-sand px-4 py-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Rolos</p>
+                                    <p class="mt-1 font-display text-xl font-bold text-ink">{{ product.roll_total }}</p>
+                                </div>
+                                <div class="rounded-2xl bg-sand px-4 py-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Fisico</p>
+                                    <p class="mt-1 font-display text-xl font-bold text-ink">{{ product.physical_total|floatformat:3 }}</p>
+                                </div>
+                                <div class="rounded-2xl bg-sand px-4 py-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Reservado</p>
+                                    <p class="mt-1 font-display text-xl font-bold text-clay">{{ product.reserved_total|floatformat:3 }}</p>
+                                </div>
+                                <div class="rounded-2xl bg-sand px-4 py-3">
+                                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Disponivel</p>
+                                    <p class="mt-1 font-display text-xl font-bold text-forest">{{ product.available_total|floatformat:3 }}</p>
+                                </div>
+                            </div>
+                        </summary>
+
+                        <div class="border-t border-stone-200 px-5 py-4">
+                            <div class="mb-3 flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">
+                                <span>Cores</span>
+                                <span>{{ product.color_total }} selecionavel(is)</span>
+                            </div>
+                            <div class="space-y-3">
+                                {% for color in product.colors %}
+                                    <a href="{{ color.select_url }}" class="block rounded-2xl border px-4 py-4 transition {% if color.is_selected %}border-clay/40 bg-clay/5{% else %}border-stone-200 bg-sand/60 hover:bg-white{% endif %}">
+                                        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                                            <div>
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <p class="font-semibold text-ink">{{ color.name }}</p>
+                                                    {% if color.is_selected %}
+                                                        <span class="inline-flex rounded-full bg-clay/10 px-3 py-1 text-[11px] font-semibold text-clay">Filtro ativo</span>
+                                                    {% endif %}
+                                                </div>
+                                                <p class="mt-1 text-sm text-stone-500">{{ color.roll_total }} rolo(s) nesta cor</p>
+                                            </div>
+                                            <div class="grid gap-3 text-sm text-stone-600 sm:grid-cols-3 lg:min-w-[24rem]">
+                                                <div><span class="font-semibold text-ink">Fisico:</span> {{ color.physical_total|floatformat:3 }}</div>
+                                                <div><span class="font-semibold text-clay">Reservado:</span> {{ color.reserved_total|floatformat:3 }}</div>
+                                                <div><span class="font-semibold text-forest">Disponivel:</span> {{ color.available_total|floatformat:3 }}</div>
+                                            </div>
+                                        </div>
+                                    </a>
+                                {% empty %}
+                                    <div class="rounded-2xl border border-dashed border-stone-300 px-4 py-6 text-sm text-stone-500">Nenhuma cor encontrada para este produto.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </details>
+                {% empty %}
+                    <div class="rounded-3xl border border-dashed border-stone-300 bg-white/70 px-6 py-12 text-center text-stone-500">Nenhum saldo encontrado com os filtros atuais.</div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="glass-panel rounded-[2rem] p-6">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">Operacao</p>
+                <h2 class="mt-2 font-display text-2xl font-bold text-ink">Rolos em estoque</h2>
+                <p class="mt-2 text-sm text-stone-600">Os rolos agora acompanham o escopo selecionado no painel da esquerda para deixar a conferencia mais rapida.</p>
+            </div>
+
+            {% if active_product %}
+                <div class="mt-6 rounded-3xl border border-stone-200 bg-white/70 p-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Escopo atual</p>
+                            <h3 class="mt-2 font-display text-2xl font-bold text-ink">{{ active_product.reference }}{% if active_color %} <span class="text-stone-400">/</span> {{ active_color.name }}{% endif %}</h3>
+                            <p class="mt-2 text-sm text-stone-600">
+                                {% if active_color %}
+                                    Mostrando somente os rolos desta cor. Volte para o produto para revisar todas as cores juntas.
+                                {% else %}
+                                    Mostrando os rolos deste produto. Clique em uma cor no painel esquerdo para refinar ainda mais.
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="flex gap-2">
+                            {% if active_color %}
+                                <a href="{{ active_product.select_url }}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Ver todas as cores</a>
+                            {% endif %}
+                            <div class="rounded-2xl bg-sand px-4 py-3 text-right">
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Rolos visiveis</p>
+                                <p class="mt-1 font-display text-2xl font-bold text-ink">{{ rolls|length }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+                <table class="min-w-full divide-y divide-stone-200 text-sm">
+                    <thead class="bg-stone-50 text-left text-stone-500">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold">Rolo</th>
+                            <th class="px-4 py-3 font-semibold">Produto</th>
+                            <th class="px-4 py-3 font-semibold">Fornecedor</th>
+                            <th class="px-4 py-3 font-semibold">Entrada</th>
+                            <th class="px-4 py-3 font-semibold">Ajustes</th>
+                            <th class="px-4 py-3 font-semibold">Fisico</th>
+                            <th class="px-4 py-3 font-semibold">Reservado</th>
+                            <th class="px-4 py-3 font-semibold">Saldo</th>
+                            <th class="px-4 py-3 font-semibold">Status</th>
+                            <th class="px-4 py-3 font-semibold"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100">
+                        {% for roll in rolls %}
+                            <tr>
+                                <td class="px-4 py-4 font-semibold text-ink">{{ roll.identifier }}</td>
+                                <td class="px-4 py-4">
+                                    <p>{{ roll.variant.product.reference }} | {{ roll.variant.color.name }}</p>
+                                    <p class="mt-1 text-xs text-stone-500">{{ roll.variant.product.description }}</p>
+                                </td>
+                                <td class="px-4 py-4">{{ roll.stock_entry.supplier.trade_name }}</td>
+                                <td class="px-4 py-4 text-stone-600">{{ roll.stock_entry.received_at|date:'d/m/Y' }}</td>
+                                <td class="px-4 py-4 font-semibold {% if roll.adjustment_total >= 0 %}text-forest{% else %}text-clay{% endif %}">{{ roll.adjustment_total|floatformat:3 }} {{ roll.unit_code }}</td>
+                                <td class="px-4 py-4 font-semibold text-ink">{{ roll.physical_total|floatformat:3 }} {{ roll.unit_code }}</td>
+                                <td class="px-4 py-4 font-semibold text-clay">{{ roll.reserved_total|floatformat:3 }} {{ roll.unit_code }}</td>
+                                <td class="px-4 py-4 font-semibold text-forest">{{ roll.available_quantity|floatformat:3 }} {{ roll.unit_code }}</td>
+                                <td class="px-4 py-4">
+                                    {% if roll.stock_status == 'sold_out' %}
+                                        <span class="rounded-full bg-stone-200 px-3 py-1 text-xs font-semibold text-stone-700">Zerado</span>
+                                    {% elif roll.stock_status == 'reserved' %}
+                                        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Reservado</span>
+                                    {% else %}
+                                        <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Disponivel</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-4 text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <a href="{% url 'sales:stock_adjustment_create' roll.pk %}" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Ajustar</a>
+                                        <a href="{% url 'sales:stock_movement_list' %}?q={{ roll.identifier }}" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Historico</a>
+                                        <a href="{% url 'sales:roll_label' roll.pk %}" target="_blank" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Etiqueta</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="10" class="px-4 py-10 text-center text-stone-500">Nenhum rolo encontrado neste escopo.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}Ajustar rolo | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Estoque{% endblock %}
+{% block page_title %}Ajustar rolo {{ roll.identifier }}{% endblock %}
+
+{% block content %}
+    <div class="grid gap-6 xl:grid-cols-[1fr_0.42fr]"> 
+        <section class="glass-panel rounded-[2rem] p-6 sm:p-8"> 
+            <div>
+                <h2 class="font-display text-2xl font-bold text-ink">Ajuste manual e devolucao</h2>
+                <p class="mt-2 max-w-2xl text-sm text-stone-600">Use esta tela para corrigir perdas, acertos de peso/metro ou devolver saldo ao rolo sem alterar a entrada original.</p>
+            </div>
+
+            <form method="post" class="mt-6 space-y-5"> 
+                {% csrf_token %}
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Tipo de movimentacao</label>
+                    {{ form.adjustment_type }}
+                    {% if form.adjustment_type.errors %}<p class="mt-2 text-sm text-red-600">{{ form.adjustment_type.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Quantidade</label>
+                    {{ form.quantity }}
+                    {% if form.quantity.errors %}<p class="mt-2 text-sm text-red-600">{{ form.quantity.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Observacoes</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}<p class="mt-2 text-sm text-red-600">{{ form.notes.errors|join:', ' }}</p>{% endif %}
+                </div>
+                {% if form.non_field_errors %}
+                    <div class="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div class="flex flex-col gap-3 sm:flex-row"> 
+                    <button type="submit" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Salvar movimentacao</button>
+                    <a href="{% url 'sales:stock_overview' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Voltar</a>
+                </div>
+            </form>
+        </section>
+
+        <aside class="space-y-6"> 
+            <article class="glass-panel rounded-[2rem] p-6"> 
+                <h2 class="font-display text-xl font-bold text-ink">Resumo do rolo</h2>
+                <div class="mt-4 space-y-3 text-sm text-stone-600"> 
+                    <p><span class="font-semibold text-ink">Produto:</span> {{ roll.variant.product.reference }} | {{ roll.variant.product.description }}</p>
+                    <p><span class="font-semibold text-ink">Cor:</span> {{ roll.variant.color.name }}</p>
+                    <p><span class="font-semibold text-ink">Fornecedor:</span> {{ roll.stock_entry.supplier.trade_name }}</p>
+                    <p><span class="font-semibold text-ink">Unidade:</span> {{ roll.unit_display }}</p>
+                    <p><span class="font-semibold text-ink">Ajustes:</span> {{ roll.adjustment_total|floatformat:3 }} {{ roll.unit_code }}</p>
+                    <p><span class="font-semibold text-ink">Fisico:</span> {{ roll.physical_total|floatformat:3 }} {{ roll.unit_code }}</p>
+                    <p><span class="font-semibold text-ink">Reservado:</span> {{ roll.reserved_total|floatformat:3 }} {{ roll.unit_code }}</p>
+                    <p><span class="font-semibold text-ink">Disponivel:</span> {{ roll.available_quantity|floatformat:3 }} {{ roll.unit_code }}</p>
+                </div>
+            </article>
+
+            <article class="glass-panel rounded-[2rem] p-6"> 
+                <h2 class="font-display text-xl font-bold text-ink">Ultimas movimentacoes</h2>
+                <div class="mt-4 space-y-3 text-sm"> 
+                    {% for movement in recent_movements %}
+                        <div class="rounded-2xl border border-stone-200 bg-white/70 px-4 py-3"> 
+                            <p class="font-semibold text-ink">{{ movement.get_movement_type_display }}</p>
+                            <p class="mt-1 text-stone-600">{{ movement.effective_at|date:'d/m/Y H:i' }}</p>
+                            <p class="mt-1 text-stone-600">{{ movement.quantity|floatformat:3 }} {{ roll.unit_code }} | saldo {{ movement.balance_after|floatformat:3 }} {{ roll.unit_code }}</p>
+                        </div>
+                    {% empty %}
+                        <p class="text-sm text-stone-500">Nenhuma movimentacao registrada ainda.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </aside>
+    </div>
+{% endblock %}

@@ -1,0 +1,78 @@
+﻿{% extends 'base.html' %}
+{% load app_formatters %}
+
+{% block title %}Pedidos | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Operacao{% endblock %}
+{% block page_title %}Pedidos{% endblock %}
+
+{% block content %}
+    <section class="glass-panel rounded-[2rem] p-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h2 class="font-display text-2xl font-bold text-ink">Lista de pedidos</h2>
+                <p class="mt-2 max-w-2xl text-sm text-stone-600">Cada pedido nasce direto para um cliente e agora consome rolos reais do estoque, mantendo a exportacao da Webpic consistente com o que foi separado.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <form method="get" class="flex gap-3">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Buscar por numero, cliente ou contato" class="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200 sm:w-80">
+                    <button type="submit" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Buscar</button>
+                </form>
+                <a href="{% url 'sales:order_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Novo pedido</a>
+            </div>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <thead class="bg-stone-50 text-left text-stone-500">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Numero</th>
+                        <th class="px-4 py-3 font-semibold">Cliente</th>
+                        <th class="px-4 py-3 font-semibold">Contato</th>
+                        <th class="px-4 py-3 font-semibold">Itens</th>
+                        <th class="px-4 py-3 font-semibold">Status</th>
+                        <th class="px-4 py-3 font-semibold">Webpic</th>
+                        <th class="px-4 py-3 font-semibold">Total</th>
+                        <th class="px-4 py-3 font-semibold"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                    {% for order in orders %}
+                        <tr>
+                            <td class="px-4 py-4 font-semibold text-ink">#{{ order.pk }}</td>
+                            <td class="px-4 py-4">{{ order.buyer_company.trade_name|default:order.buyer_company.legal_name }}</td>
+                            <td class="px-4 py-4">{{ order.participant.name }}</td>
+                            <td class="px-4 py-4 text-stone-600">{{ order.total_pieces }} linha(s)</td>
+                            <td class="px-4 py-4">
+                                {% if order.status == 'draft' %}
+                                    <span class="inline-flex rounded-full bg-stone-200 px-3 py-1 text-xs font-semibold text-stone-700">Rascunho</span>
+                                {% elif order.status == 'reserved' %}
+                                    <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Reservado</span>
+                                {% elif order.status == 'confirmed' %}
+                                    <span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Confirmado</span>
+                                {% elif order.status == 'cancelled' %}
+                                    <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">Cancelado</span>
+                                {% else %}
+                                    <span class="inline-flex rounded-full bg-stone-200 px-3 py-1 text-xs font-semibold text-stone-700">{{ order.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="inline-flex rounded-full px-3 py-1 text-xs font-semibold {% if order.webpic_integrated %}bg-emerald-100 text-emerald-700{% else %}bg-stone-200 text-stone-700{% endif %}">
+                                    {% if order.webpic_integrated %}Integrado{% else %}Pendente{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-4 py-4 font-semibold text-forest">{{ order.total_amount|brl }}</td>
+                            <td class="px-4 py-4 text-right">
+                                <a href="{% url 'sales:order_update' order.pk %}" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Editar</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-4 py-10 text-center text-stone-500">Nenhum pedido cadastrado ainda.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}
+

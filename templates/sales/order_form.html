@@ -1,0 +1,426 @@
+﻿{% extends 'base.html' %}
+{% load app_formatters %}
+
+{% block title %}{% if order %}Editar pedido{% else %}Novo pedido{% endif %} | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Operacao{% endblock %}
+{% block page_title %}{% if order %}Editar pedido #{{ order.pk }}{% else %}Novo pedido{% endif %}{% endblock %}
+
+{% block content %}
+    <form method="post" novalidate class="grid gap-6 xl:grid-cols-[1fr_0.34fr]" x-data="orderBuilder()" x-init="init()" data-order-id="{% if order %}{{ order.pk }}{% endif %}" data-roll-lookup-url="{% url 'sales:roll_lookup' %}">
+        {% csrf_token %}
+        <section class="space-y-6">
+            <article class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <div class="mb-6 rounded-3xl border border-stone-200 bg-white/70 p-4 text-sm text-stone-600">
+                    <p class="font-semibold text-ink">Venda com estoque real</p>
+                    <p class="mt-2">Cada linha do pedido aponta para um rolo real. O rolo entra inteiro na venda, com quantidade e valor travados pelo sistema.</p>
+                </div>
+
+                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Cliente</label>
+                        {{ form.buyer_company }}
+                        {% if form.buyer_company.errors %}<p class="mt-2 text-sm text-red-600">{{ form.buyer_company.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Contato do cliente</label>
+                        {{ form.participant }}
+                        {% if form.participant.errors %}<p class="mt-2 text-sm text-red-600">{{ form.participant.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Representante</label>
+                        {{ form.representative }}
+                        {% if form.representative.errors %}<p class="mt-2 text-sm text-red-600">{{ form.representative.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Prazo de entrega</label>
+                        {{ form.delivery_deadline }}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Frete</label>
+                        {{ form.freight_type }}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Transportadora</label>
+                        {{ form.carrier }}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Status</label>
+                        {{ form.status }}
+                    </div>
+                </div>
+
+                <div class="mt-6 grid gap-5 md:grid-cols-2">
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Forma de pagamento</label>
+                        {{ form.payment_method }}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Condicao de pagamento</label>
+                        {{ form.payment_terms }}
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="text-sm font-semibold text-stone-700">Observacoes</label>
+                    {{ form.notes }}
+                </div>
+            </article>
+
+            <article class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="font-display text-2xl font-bold text-ink">Rolos do pedido</h2>
+                        <p class="mt-2 max-w-2xl text-sm text-stone-600">Cada rolo lido entra fechado no pedido. O saldo exibido nas opcoes ja desconta apenas pedidos Reservados e Confirmados.</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 rounded-3xl border border-stone-200 bg-white/70 p-4">
+                    <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+                        <div>
+                            <label class="text-sm font-semibold text-stone-700">Leitura por codigo de barras ou QR code</label>
+                            <input type="text" data-roll-scan @keydown.enter.prevent="scanRoll()" placeholder="Bipe ou cole o codigo do rolo" class="mt-2 block w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                            <p class="mt-2 text-xs text-stone-500">Ao localizar o rolo, o sistema cria a proxima linha automaticamente e trava a quantidade total do rolo e o valor unitario.</p>
+                        </div>
+                        <button type="button" @click="scanRoll()" :disabled="scannerBusy" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60">Ler codigo</button>
+                    </div>
+                    <div x-show="scannerMessage" x-cloak class="mt-3 rounded-2xl px-4 py-3 text-sm" :class="scannerError ? 'border border-red-200 bg-red-50 text-red-700' : 'border border-emerald-200 bg-emerald-50 text-emerald-700'">
+                        <span x-text="scannerMessage"></span>
+                    </div>
+                </div>
+
+                {{ formset.management_form }}
+                {% if formset.non_form_errors %}
+                    <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ formset.non_form_errors }}</div>
+                {% endif %}
+
+                <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+                    <table class="min-w-full divide-y divide-stone-200 text-sm">
+                        <thead class="bg-stone-50 text-left text-stone-500">
+                            <tr>
+                                <th class="px-4 py-3 font-semibold">Rolo</th>
+                                <th class="px-4 py-3 font-semibold">Qtde fixa</th>
+                                <th class="px-4 py-3 font-semibold">Unitario fixo</th>
+                                <th class="px-4 py-3 font-semibold">Observacao</th>
+                                <th class="px-4 py-3 font-semibold">Remover</th>
+                            </tr>
+                        </thead>
+                        <tbody data-item-rows class="divide-y divide-stone-100">
+                            {% for item_form in formset %}
+                                <tr data-item-row>
+                                    <td class="px-4 py-4 align-top">
+                                        {{ item_form.id }}
+                                        {{ item_form.roll }}
+                                        {% if item_form.roll.errors %}<p class="mt-2 text-xs text-red-600">{{ item_form.roll.errors|join:', ' }}</p>{% endif %}
+                                    </td>
+                                    <td class="px-4 py-4 align-top">
+                                        <div @input="tick++" @change="tick++">{{ item_form.quantity }}</div>
+                                        {% if item_form.quantity.errors %}<p class="mt-2 text-xs text-red-600">{{ item_form.quantity.errors|join:', ' }}</p>{% endif %}
+                                    </td>
+                                    <td class="px-4 py-4 align-top">
+                                        <div @input="tick++" @change="tick++">{{ item_form.unit_price }}</div>
+                                        {% if item_form.unit_price.errors %}<p class="mt-2 text-xs text-red-600">{{ item_form.unit_price.errors|join:', ' }}</p>{% endif %}
+                                    </td>
+                                    <td class="px-4 py-4 align-top">
+                                        {{ item_form.notes }}
+                                        {% if item_form.notes.errors %}<p class="mt-2 text-xs text-red-600">{{ item_form.notes.errors|join:', ' }}</p>{% endif %}
+                                    </td>
+                                    <td class="px-4 py-4 align-top">
+                                        <label class="flex items-center gap-3 text-sm text-stone-600" @change="tick++; toggleEmptyState()">
+                                            {{ item_form.DELETE }}
+                                            <span>Excluir</span>
+                                        </label>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            <tr data-empty-state class="{% if formset.forms %}hidden {% endif %}bg-stone-50/80">
+                                <td colspan="5" class="px-4 py-10 text-center text-sm text-stone-500">Bipe um rolo para comecar o pedido. Cada leitura cria uma nova linha automaticamente.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <template data-empty-form-template>
+                    <tr data-item-row>
+                        <td class="px-4 py-4 align-top">
+                            {{ formset.empty_form.id }}
+                            {{ formset.empty_form.roll }}
+                        </td>
+                        <td class="px-4 py-4 align-top">
+                            <div @input="tick++" @change="tick++">{{ formset.empty_form.quantity }}</div>
+                        </td>
+                        <td class="px-4 py-4 align-top">
+                            <div @input="tick++" @change="tick++">{{ formset.empty_form.unit_price }}</div>
+                        </td>
+                        <td class="px-4 py-4 align-top">
+                            {{ formset.empty_form.notes }}
+                        </td>
+                        <td class="px-4 py-4 align-top">
+                            <label class="flex items-center gap-3 text-sm text-stone-600" @change="tick++; toggleEmptyState()">
+                                {{ formset.empty_form.DELETE }}
+                                <span>Excluir</span>
+                            </label>
+                        </td>
+                    </tr>
+                </template>
+            </article>
+        </section>
+
+        <aside class="space-y-6">
+            <article class="glass-panel rounded-[2rem] p-6">
+                <h2 class="font-display text-xl font-bold text-ink">Resumo</h2>
+                <div class="mt-6 space-y-4 text-sm text-stone-600">
+                    <div class="flex items-center justify-between gap-4">
+                        <span>Rolos no pedido</span>
+                        <strong class="text-ink" x-text="lineCount()"></strong>
+                    </div>
+                    <div class="flex items-center justify-between gap-4">
+                        <span>Subtotal</span>
+                        <strong class="text-ink" x-text="currency(subtotal())"></strong>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Tipo de desconto</label>
+                        <div @change="tick++">{{ form.discount_type }}</div>
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Desconto</label>
+                        <div @input="tick++">{{ form.discount_value }}</div>
+                    </div>
+                    <div class="flex items-center justify-between gap-4 border-t border-stone-200 pt-4 text-base">
+                        <span class="font-semibold text-ink">Total</span>
+                        <strong class="font-display text-2xl text-forest" x-text="currency(total())"></strong>
+                    </div>
+                </div>
+                {% if form.non_field_errors %}
+                    <div class="mt-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <button type="submit" class="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Salvar pedido</button>
+                <a href="{% url 'sales:order_list' %}" class="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Voltar</a>
+            </article>
+
+            <article class="glass-panel rounded-[2rem] p-6 text-sm text-stone-600">
+                <h2 class="font-display text-xl font-bold text-ink">Regras do estoque</h2>
+                <p class="mt-3">Rascunho nao reserva estoque. Reservado e Confirmado separam o saldo do rolo automaticamente.</p>
+                <p class="mt-3">Pedidos cancelados liberam o saldo do rolo automaticamente.</p>
+                <p class="mt-3">A exportacao da Webpic sai apenas de pedidos Confirmados, pelo codigo de barras da variante vinculada ao rolo selecionado.</p>
+                <p class="mt-3">No leitor, barcode e QR code do rolo apontam para o mesmo identificador unico usado pelo sistema.</p>
+            </article>
+        </aside>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function orderBuilder() {
+        return {
+            tick: 0,
+            scannerBusy: false,
+            scannerMessage: "",
+            scannerError: false,
+            init() {
+                this.toggleEmptyState();
+            },
+            parseNumber(value) {
+                const parsed = parseFloat(String(value || "0").replace(",", "."));
+                return Number.isNaN(parsed) ? 0 : parsed;
+            },
+            rows() {
+                this.tick;
+                return Array.from(this.$root.querySelectorAll("[data-item-row]"));
+            },
+            itemsBody() {
+                return this.$root.querySelector("[data-item-rows]");
+            },
+            emptyStateRow() {
+                return this.$root.querySelector("[data-empty-state]");
+            },
+            totalFormsInput() {
+                return this.$root.querySelector('input[name$="-TOTAL_FORMS"]');
+            },
+            toggleEmptyState() {
+                const emptyRow = this.emptyStateRow();
+                if (!emptyRow) {
+                    return;
+                }
+                const hasVisibleRows = this.rows().some((row) => !this.isDeleted(row));
+                emptyRow.classList.toggle("hidden", hasVisibleRows);
+            },
+            addFormRow() {
+                const template = this.$root.querySelector("[data-empty-form-template]");
+                const body = this.itemsBody();
+                const totalForms = this.totalFormsInput();
+                if (!template || !body || !totalForms) {
+                    return null;
+                }
+                const index = parseInt(totalForms.value || "0", 10) || 0;
+                const markup = template.innerHTML.replace(/__prefix__/g, String(index));
+                body.insertAdjacentHTML("beforeend", markup);
+                totalForms.value = String(index + 1);
+                const rows = body.querySelectorAll("[data-item-row]");
+                const row = rows[rows.length - 1] || null;
+                if (row && window.Alpine && typeof window.Alpine.initTree === "function") {
+                    window.Alpine.initTree(row);
+                }
+                this.tick++;
+                this.toggleEmptyState();
+                return row;
+            },
+            isDeleted(row) {
+                const checkbox = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+                return checkbox ? checkbox.checked : false;
+            },
+            hasRoll(row) {
+                const select = row.querySelector('select[name$="-roll"]');
+                return select ? String(select.value || "").trim() !== "" : false;
+            },
+            lineCount() {
+                return this.rows().filter((row) => this.hasRoll(row) && !this.isDeleted(row)).length;
+            },
+            lineTotal(row) {
+                if (this.isDeleted(row) || !this.hasRoll(row)) {
+                    return 0;
+                }
+                const quantityInput = row.querySelector('input[name$="-quantity"]');
+                const priceInput = row.querySelector('input[name$="-unit_price"]');
+                const quantity = this.parseNumber(quantityInput ? quantityInput.value : 0);
+                const price = this.parseNumber(priceInput ? priceInput.value : 0);
+                return quantity * price;
+            },
+            subtotal() {
+                return this.rows().reduce((total, row) => total + this.lineTotal(row), 0);
+            },
+            discountType() {
+                const select = this.$root.querySelector('select[name="discount_type"]');
+                return select ? select.value : "P";
+            },
+            discountValue() {
+                const input = this.$root.querySelector('input[name="discount_value"]');
+                return this.parseNumber(input ? input.value : 0);
+            },
+            total() {
+                const subtotal = this.subtotal();
+                const discountValue = this.discountValue();
+                if (this.discountType() === "A") {
+                    return Math.max(subtotal - discountValue, 0);
+                }
+                return Math.max(subtotal - ((subtotal * discountValue) / 100), 0);
+            },
+            currency(value) {
+                return new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                }).format(value || 0);
+            },
+            scannerInput() {
+                return this.$root.querySelector("[data-roll-scan]");
+            },
+            orderId() {
+                return String(this.$root.dataset.orderId || "").trim();
+            },
+            rollLookupUrl() {
+                return this.$root.dataset.rollLookupUrl || "";
+            },
+            setScannerMessage(message, isError = false) {
+                this.scannerMessage = message;
+                this.scannerError = isError;
+            },
+            highlightRow(row) {
+                if (!row) {
+                    return;
+                }
+                row.classList.add("bg-orange-50");
+                setTimeout(() => row.classList.remove("bg-orange-50"), 1200);
+            },
+            findRowByRollId(rollId) {
+                return this.rows().find((row) => {
+                    if (this.isDeleted(row)) {
+                        return false;
+                    }
+                    const select = row.querySelector('select[name$="-roll"]');
+                    return select && String(select.value) === String(rollId);
+                });
+            },
+            nextEmptyRow() {
+                return this.rows().find((row) => !this.isDeleted(row) && !this.hasRoll(row));
+            },
+            fillRow(row, payload) {
+                const select = row.querySelector('select[name$="-roll"]');
+                const quantityInput = row.querySelector('input[name$="-quantity"]');
+                const priceInput = row.querySelector('input[name$="-unit_price"]');
+                if (!select) {
+                    return;
+                }
+                select.value = String(payload.id);
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                if (quantityInput) {
+                    quantityInput.value = payload.available_quantity;
+                }
+                if (priceInput) {
+                    priceInput.value = payload.unit_price;
+                }
+                this.tick++;
+                this.toggleEmptyState();
+                this.highlightRow(row);
+            },
+            async scanRoll() {
+                if (this.scannerBusy) {
+                    return;
+                }
+                const input = this.scannerInput();
+                const code = String(input ? input.value : "").trim();
+                if (!code) {
+                    this.setScannerMessage("Informe ou bipe um codigo de rolo antes de pesquisar.", true);
+                    return;
+                }
+                this.scannerBusy = true;
+                this.setScannerMessage("");
+                try {
+                    const url = new URL(this.rollLookupUrl(), window.location.origin);
+                    url.searchParams.set("code", code);
+                    if (this.orderId()) {
+                        url.searchParams.set("order_id", this.orderId());
+                    }
+                    const response = await fetch(url, {
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                    });
+                    const payload = await response.json();
+                    if (!response.ok) {
+                        throw new Error(payload.detail || "Nao foi possivel localizar o rolo.");
+                    }
+                    const existingRow = this.findRowByRollId(payload.id);
+                    if (existingRow) {
+                        this.highlightRow(existingRow);
+                        this.setScannerMessage(`O rolo ${payload.identifier} ja esta no pedido.`);
+                        input.value = "";
+                        input.focus();
+                        return;
+                    }
+                    let row = this.nextEmptyRow();
+                    if (!row) {
+                        row = this.addFormRow();
+                    }
+                    if (!row) {
+                        throw new Error("Nao foi possivel criar uma nova linha para o pedido.");
+                    }
+                    this.fillRow(row, payload);
+                    this.setScannerMessage(`Rolo ${payload.identifier} adicionado inteiro com ${payload.available_quantity} ${payload.unit_code}. Quantidade e valor ficaram travados.`);
+                    input.value = "";
+                    input.focus();
+                } catch (error) {
+                    const label = code || "codigo informado";
+                    this.setScannerMessage(`${label}: ${error.message || "Nao foi possivel localizar o rolo."}`, true);
+                    if (input) {
+                        input.value = "";
+                        input.focus();
+                    }
+                } finally {
+                    this.scannerBusy = false;
+                }
+            },
+        };
+    }
+</script>
+{% endblock %}
+

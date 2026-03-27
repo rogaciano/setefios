@@ -1,0 +1,60 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Entradas de Estoque | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Estoque{% endblock %}
+{% block page_title %}Entradas de produtos{% endblock %}
+
+{% block content %}
+    <section class="glass-panel rounded-[2rem] p-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h2 class="font-display text-2xl font-bold text-ink">Entradas de estoque</h2>
+                <p class="mt-2 max-w-2xl text-sm text-stone-600">Cada entrada registra o fornecedor e os rolos de tecido recebidos, prontos para etiqueta e uso nas vendas.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <form method="get" class="flex gap-3">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Buscar por fornecedor, observacao ou numero" class="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200 sm:w-80">
+                    <button type="submit" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Buscar</button>
+                </form>
+                <a href="{% url 'sales:stock_overview' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Ver estoque</a>
+                <a href="{% url 'sales:stock_movement_list' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Movimentacoes</a>
+                <a href="{% url 'sales:stock_entry_import' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Importar documento</a>
+                <a href="{% url 'sales:stock_entry_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Nova entrada</a>
+            </div>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <thead class="bg-stone-50 text-left text-stone-500">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Numero</th>
+                        <th class="px-4 py-3 font-semibold">Data</th>
+                        <th class="px-4 py-3 font-semibold">Fornecedor</th>
+                        <th class="px-4 py-3 font-semibold">Rolos</th>
+                        <th class="px-4 py-3 font-semibold"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                    {% for entry in entries %}
+                        <tr>
+                            <td class="px-4 py-4 font-semibold text-ink">#{{ entry.pk }}</td>
+                            <td class="px-4 py-4">{{ entry.received_at|date:'d/m/Y' }}</td>
+                            <td class="px-4 py-4">{{ entry.supplier.trade_name }}</td>
+                            <td class="px-4 py-4 text-stone-600">{{ entry.roll_total }} rolo(s)</td>
+                            <td class="px-4 py-4 text-right">
+                                <div class="flex justify-end gap-2">
+                                    <a href="{% url 'sales:stock_entry_labels' entry.pk %}" target="_blank" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Etiquetas</a>
+                                    <a href="{% url 'sales:stock_entry_update' entry.pk %}" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Editar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-4 py-10 text-center text-stone-500">Nenhuma entrada cadastrada ainda.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

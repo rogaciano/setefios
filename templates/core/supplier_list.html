@@ -1,0 +1,64 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Fornecedores | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Cadastros{% endblock %}
+{% block page_title %}Fornecedores{% endblock %}
+
+{% block content %}
+    <section class="glass-panel rounded-[2rem] p-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h2 class="font-display text-2xl font-bold text-ink">Cadastro de fornecedores</h2>
+                <p class="mt-2 max-w-2xl text-sm text-stone-600">Aqui ficam os fornecedores usados nas entradas de tecido e no controle dos rolos em estoque.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <form method="get" class="flex gap-3">
+                    <input type="text" name="q" value="{{ query }}" placeholder="Buscar por nome, CNPJ ou contato" class="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200 sm:w-80">
+                    <button type="submit" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Buscar</button>
+                </form>
+                <a href="{% url 'core:supplier_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Novo fornecedor</a>
+            </div>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <thead class="bg-stone-50 text-left text-stone-500">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Nome fantasia</th>
+                        <th class="px-4 py-3 font-semibold">CNPJ</th>
+                        <th class="px-4 py-3 font-semibold">Contato</th>
+                        <th class="px-4 py-3 font-semibold">Cidade</th>
+                        <th class="px-4 py-3 font-semibold">Memoria</th>
+                        <th class="px-4 py-3 font-semibold">Status</th>
+                        <th class="px-4 py-3 font-semibold"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                    {% for supplier in suppliers %}
+                        <tr>
+                            <td class="px-4 py-4 font-semibold text-ink">{{ supplier.trade_name }}</td>
+                            <td class="px-4 py-4">{{ supplier.cnpj }}</td>
+                            <td class="px-4 py-4">{{ supplier.contact_name|default:'-' }}</td>
+                            <td class="px-4 py-4">{% if supplier.city %}{{ supplier.city }}/{{ supplier.state }}{% else %}-{% endif %}</td>
+                            <td class="px-4 py-4 text-stone-600">{{ supplier.import_profile_total }} perfil(is)</td>
+                            <td class="px-4 py-4">
+                                {% if supplier.is_active %}
+                                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Ativo</span>
+                                {% else %}
+                                    <span class="rounded-full bg-stone-200 px-3 py-1 text-xs font-semibold text-stone-600">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 text-right">
+                                <a href="{% url 'core:supplier_update' supplier.pk %}" class="rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Editar</a>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-4 py-10 text-center text-stone-500">Nenhum fornecedor cadastrado ainda.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

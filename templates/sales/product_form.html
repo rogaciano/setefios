@@ -1,0 +1,77 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}{% if product %}Editar produto{% else %}Novo produto{% endif %} | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Catalogo{% endblock %}
+{% block page_title %}{% if product %}Editar produto{% else %}Novo produto{% endif %}{% endblock %}
+
+{% block content %}
+    <form method="post" class="grid gap-6 xl:grid-cols-[1fr_0.32fr]">
+        {% csrf_token %}
+        <section class="glass-panel rounded-[2rem] p-6 sm:p-8">
+            <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Referencia</label>
+                    {{ form.reference }}
+                    {% if form.reference.errors %}<p class="mt-2 text-sm text-red-600">{{ form.reference.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-sm font-semibold text-stone-700">Descricao</label>
+                    {{ form.description }}
+                    {% if form.description.errors %}<p class="mt-2 text-sm text-red-600">{{ form.description.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Preco</label>
+                    {{ form.price }}
+                    {% if form.price.errors %}<p class="mt-2 text-sm text-red-600">{{ form.price.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Categoria existente</label>
+                    {{ form.category }}
+                    {% if form.category.errors %}<p class="mt-2 text-sm text-red-600">{{ form.category.errors|join:', ' }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Nova categoria</label>
+                    {{ form.new_category_name }}
+                </div>
+                <div>
+                    <label class="text-sm font-semibold text-stone-700">Unidade de controle</label>
+                    {{ form.unit }}
+                    {% if form.unit.errors %}<p class="mt-2 text-sm text-red-600">{{ form.unit.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </div>
+
+            <div class="mt-6">
+                <label class="text-sm font-semibold text-stone-700">Cores</label>
+                {{ form.colors }}
+                <label class="mt-4 block text-sm font-semibold text-stone-700">Novas cores</label>
+                {{ form.new_colors }}
+                <p class="mt-2 text-xs text-stone-500">{{ form.new_colors.help_text }}</p>
+                {% if form.colors.errors %}<p class="mt-2 text-sm text-red-600">{{ form.colors.errors|join:', ' }}</p>{% endif %}
+            </div>
+
+            {% if form.non_field_errors %}
+                <div class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{{ form.non_field_errors }}</div>
+            {% endif %}
+        </section>
+
+        <aside class="space-y-6">
+            <section class="glass-panel rounded-[2rem] p-6">
+                <h2 class="font-display text-xl font-bold text-ink">Publicacao</h2>
+                <label class="mt-5 flex items-center gap-3 text-sm text-stone-700">
+                    {{ form.is_active }}
+                    <span>Produto ativo para pedidos</span>
+                </label>
+                <button type="submit" class="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Salvar produto</button>
+                <a href="{% url 'sales:product_list' %}" class="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Voltar</a>
+            </section>
+            <section class="glass-panel rounded-[2rem] p-6 text-sm text-stone-600">
+                <h2 class="font-display text-xl font-bold text-ink">Produto textil</h2>
+                <p class="mt-3">Ao salvar, o sistema gera automaticamente uma variante por cor selecionada.</p>
+                <p class="mt-3">A unidade define se o estoque desse tecido sera controlado por metro ou por peso nas proximas etapas.</p>
+            </section>
+        </aside>
+    </form>
+{% endblock %}

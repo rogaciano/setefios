@@ -1,0 +1,58 @@
+:root {
+    --sand: #f6efe7;
+    --ink: #1b1a18;
+    --muted: #6b655f;
+    --panel: rgba(255, 255, 255, 0.76);
+    --line: rgba(62, 49, 36, 0.12);
+    --brand: #c35b2c;
+    --brand-dark: #8f3f1e;
+    --accent: #184c47;
+}
+
+body {
+    min-height: 100vh;
+    background:
+        radial-gradient(circle at top left, rgba(195, 91, 44, 0.12), transparent 24%),
+        radial-gradient(circle at bottom right, rgba(24, 76, 71, 0.14), transparent 22%),
+        var(--sand);
+    color: var(--ink);
+}
+
+.bg-clay {
+    background-color: var(--brand);
+}
+
+.glass-panel {
+    backdrop-filter: blur(18px);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow: 0 24px 80px rgba(31, 24, 18, 0.08);
+}
+
+.grid-fade {
+    background-image:
+        linear-gradient(rgba(27, 26, 24, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(27, 26, 24, 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+
+.picker-row {
+    cursor: pointer;
+    transition: background-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.picker-row:hover {
+    background: rgba(195, 91, 44, 0.08);
+}
+
+.picker-row:focus-visible {
+    outline: 2px solid rgba(195, 91, 44, 0.35);
+    outline-offset: -2px;
+}
+
+.picker-row.is-selected {
+    background: rgba(195, 91, 44, 0.12);
+    color: var(--brand-dark);
+    box-shadow: inset 3px 0 0 var(--brand);
+}

@@ -1,0 +1,18 @@
+# Ambiente local
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Django
+/staticfiles/
+/media/
+
+# Banco local
+/db.sqlite3
+/clone/
+/venv/
+.venv/
+~$*.xlsx

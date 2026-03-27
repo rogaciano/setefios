@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Movimentacoes | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Estoque{% endblock %}
+{% block page_title %}Movimentacoes de estoque{% endblock %}
+
+{% block content %}
+    <section class="glass-panel rounded-[2rem] p-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <h2 class="font-display text-2xl font-bold text-ink">Historico por rolo</h2>
+                <p class="mt-2 max-w-3xl text-sm text-stone-600">A tabela mostra entrada, ajustes, devolucoes e consumo de saldo por reserva ou confirmacao, sempre vinculados ao rolo fisico.</p>
+            </div>
+            <div class="flex flex-col gap-3 sm:flex-row">
+                <a href="{% url 'sales:stock_overview' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Ver estoque</a>
+                <a href="{% url 'sales:stock_entry_list' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Entradas</a>
+                <a href="{% url 'sales:stock_entry_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Nova entrada</a>
+            </div>
+        </div>
+
+        <form method="get" class="mt-6 grid gap-3 lg:grid-cols-[minmax(0,1fr)_240px_auto]">
+            <input type="text" name="q" value="{{ query }}" placeholder="Buscar por rolo, referencia, descricao, cor, fornecedor, entrada, ajuste ou pedido" class="w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+            <select name="movement_type" class="rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200">
+                <option value="">Todos os tipos</option>
+                {% for value, label in movement_type_choices %}
+                    <option value="{{ value }}" {% if movement_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <div class="flex gap-3">
+                <button type="submit" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Filtrar</button>
+                <a href="{% url 'sales:stock_movement_list' %}" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Limpar</a>
+            </div>
+        </form>
+
+        <div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Movimentacoes</p>
+                <p class="mt-2 font-display text-3xl font-bold text-ink">{{ summary.movement_total }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Rolos</p>
+                <p class="mt-2 font-display text-3xl font-bold text-ink">{{ summary.roll_total }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Entradas</p>
+                <p class="mt-2 font-display text-3xl font-bold text-forest">{{ summary.entry_quantity|floatformat:3 }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Devolucoes</p>
+                <p class="mt-2 font-display text-3xl font-bold text-forest">{{ summary.return_quantity|floatformat:3 }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Ajustes +</p>
+                <p class="mt-2 font-display text-3xl font-bold text-forest">{{ summary.adjustment_in_quantity|floatformat:3 }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Ajustes -</p>
+                <p class="mt-2 font-display text-3xl font-bold text-clay">{{ summary.adjustment_out_quantity|floatformat:3 }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Reservas</p>
+                <p class="mt-2 font-display text-3xl font-bold text-clay">{{ summary.reserved_quantity|floatformat:3 }}</p>
+            </article>
+            <article class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Confirmacoes</p>
+                <p class="mt-2 font-display text-3xl font-bold text-stone-700">{{ summary.confirmed_quantity|floatformat:3 }}</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="glass-panel mt-6 rounded-[2rem] p-6">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">Auditoria</p>
+            <h2 class="mt-2 font-display text-2xl font-bold text-ink">Tabela de movimentacoes</h2>
+            <p class="mt-2 text-sm text-stone-600">Cada linha mostra a origem da movimentacao, a quantidade movimentada e o saldo restante do rolo depois daquele evento.</p>
+        </div>
+
+        <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <thead class="bg-stone-50 text-left text-stone-500">
+                    <tr>
+                        <th class="px-4 py-3 font-semibold">Data</th>
+                        <th class="px-4 py-3 font-semibold">Tipo</th>
+                        <th class="px-4 py-3 font-semibold">Rolo</th>
+                        <th class="px-4 py-3 font-semibold">Produto</th>
+                        <th class="px-4 py-3 font-semibold">Origem</th>
+                        <th class="px-4 py-3 font-semibold">Quantidade</th>
+                        <th class="px-4 py-3 font-semibold">Saldo apos</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-100">
+                    {% for movement in movements %}
+                        <tr>
+                            <td class="px-4 py-4 text-stone-600">{{ movement.effective_at|date:'d/m/Y H:i' }}</td>
+                            <td class="px-4 py-4">
+                                {% if movement.movement_type == 'entry' %}
+                                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Entrada</span>
+                                {% elif movement.movement_type == 'adjustment_in' %}
+                                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Ajuste +</span>
+                                {% elif movement.movement_type == 'adjustment_out' %}
+                                    <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">Ajuste -</span>
+                                {% elif movement.movement_type == 'return' %}
+                                    <span class="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700">Devolucao</span>
+                                {% elif movement.movement_type == 'reserved' %}
+                                    <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">Reserva</span>
+                                {% else %}
+                                    <span class="rounded-full bg-stone-200 px-3 py-1 text-xs font-semibold text-stone-700">Confirmacao</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-4 font-semibold text-ink">{{ movement.roll.identifier }}</td>
+                            <td class="px-4 py-4">
+                                <p>{{ movement.roll.variant.product.reference }} | {{ movement.roll.variant.color.name }}</p>
+                                <p class="mt-1 text-xs text-stone-500">{{ movement.roll.variant.product.description }}</p>
+                            </td>
+                            <td class="px-4 py-4">
+                                <p class="font-semibold text-ink">{{ movement.source_label }}</p>
+                                <p class="mt-1 text-xs text-stone-500">{{ movement.roll.stock_entry.supplier.trade_name }}</p>
+                            </td>
+                            <td class="px-4 py-4 font-semibold {% if movement.direction == 'in' %}text-forest{% else %}text-clay{% endif %}">
+                                {% if movement.direction == 'in' %}+{% else %}-{% endif %}{{ movement.quantity|floatformat:3 }} {{ movement.roll.unit_code }}
+                            </td>
+                            <td class="px-4 py-4 font-semibold text-ink">{{ movement.balance_after|floatformat:3 }} {{ movement.roll.unit_code }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-4 py-10 text-center text-stone-500">Nenhuma movimentacao encontrada com os filtros atuais.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+{% endblock %}

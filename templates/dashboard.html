@@ -1,0 +1,95 @@
+﻿{% extends 'base.html' %}
+{% load app_formatters %}
+
+{% block title %}Dashboard | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Visao geral{% endblock %}
+{% block page_title %}Dashboard Comercial{% endblock %}
+
+{% block content %}
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article class="glass-panel rounded-[2rem] p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Clientes ativos</p>
+            <p class="mt-4 font-display text-4xl font-bold text-ink">{{ client_total }}</p>
+            <p class="mt-2 text-sm text-stone-500">Base comercial pronta para receber pedidos.</p>
+        </article>
+        <article class="glass-panel rounded-[2rem] p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Produtos ativos</p>
+            <p class="mt-4 font-display text-4xl font-bold text-ink">{{ product_total }}</p>
+            <p class="mt-2 text-sm text-stone-500">Catalogo global sem dependencia de evento.</p>
+        </article>
+        <article class="glass-panel rounded-[2rem] p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Pedidos</p>
+            <p class="mt-4 font-display text-4xl font-bold text-ink">{{ order_total }}</p>
+            <p class="mt-2 text-sm text-stone-500">Pedidos registrados na operacao atual.</p>
+        </article>
+        <article class="glass-panel rounded-[2rem] p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Venda acumulada</p>
+            <p class="mt-4 font-display text-4xl font-bold text-ink">{{ sales_total|brl }}</p>
+            <p class="mt-2 text-sm text-stone-500">{{ pieces_total }} itens movimentados nos pedidos.</p>
+        </article>
+    </section>
+
+    <section class="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+        <article class="glass-panel rounded-[2rem] p-6">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Pedidos recentes</p>
+                    <h2 class="mt-2 font-display text-2xl font-bold text-ink">Movimento comercial</h2>
+                </div>
+                <a href="{% url 'sales:order_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Novo pedido</a>
+            </div>
+            <div class="mt-6 overflow-hidden rounded-3xl border border-stone-200 bg-white/70">
+                <table class="min-w-full divide-y divide-stone-200 text-sm">
+                    <thead class="bg-stone-50 text-left text-stone-500">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold">Pedido</th>
+                            <th class="px-4 py-3 font-semibold">Cliente</th>
+                            <th class="px-4 py-3 font-semibold">Contato</th>
+                            <th class="px-4 py-3 font-semibold">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-stone-100">
+                        {% for order in recent_orders %}
+                            <tr>
+                                <td class="px-4 py-3 font-semibold text-ink">#{{ order.pk }}</td>
+                                <td class="px-4 py-3">{{ order.buyer_company.trade_name|default:order.buyer_company.legal_name }}</td>
+                                <td class="px-4 py-3">{{ order.participant.name }}</td>
+                                <td class="px-4 py-3 font-semibold text-ink">{{ order.total_amount|brl }}</td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-4 py-8 text-center text-stone-500">Nenhum pedido ainda. Rode <code class="rounded bg-stone-100 px-2 py-1">python manage.py bootstrap_sales_demo</code> para popular uma base demo.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </article>
+
+        <article class="glass-panel rounded-[2rem] p-6">
+            <div class="flex items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Catalogo</p>
+                    <h2 class="mt-2 font-display text-2xl font-bold text-ink">Produtos em destaque</h2>
+                </div>
+                <a href="{% url 'sales:product_create' %}" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Novo produto</a>
+            </div>
+            <div class="mt-6 space-y-3">
+                {% for product in product_highlights %}
+                    <div class="rounded-3xl border border-stone-200 bg-white/70 p-4">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{{ product.reference }}</p>
+                                <p class="mt-1 font-semibold text-ink">{{ product.description }}</p>
+                                <p class="mt-2 text-sm text-stone-500">{{ product.category.name }}</p>
+                            </div>
+                            <p class="font-semibold text-forest">{{ product.price|brl }}</p>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="rounded-3xl border border-dashed border-stone-300 px-4 py-8 text-center text-sm text-stone-500">Cadastre os primeiros produtos para iniciar os pedidos.</div>
+                {% endfor %}
+            </div>
+        </article>
+    </section>
+{% endblock %}
