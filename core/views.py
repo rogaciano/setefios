@@ -10,7 +10,7 @@ from django.views.generic import RedirectView, TemplateView
 
 from sales.models import Order, Product
 
-from .forms import SupplierForm, SupplierImportProfileFormSet
+from .forms import CompanyForm, SupplierForm, SupplierImportProfileFormSet
 from .models import Company, Supplier
 
 
@@ -49,6 +49,52 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             }
         )
         return context
+
+
+@login_required
+def client_list(request):
+    query = request.GET.get("q", "").strip()
+    clients = Company.objects.order_by("trade_name", "legal_name")
+
+    if query:
+        clients = clients.filter(
+            Q(trade_name__icontains=query)
+            | Q(legal_name__icontains=query)
+            | Q(cnpj__icontains=query)
+            | Q(email__icontains=query)
+        )
+
+    return render(
+        request,
+        "core/client_list.html",
+        {
+            "clients": clients,
+            "query": query,
+        },
+    )
+
+
+@login_required
+def client_form(request, pk=None):
+    company = get_object_or_404(Company, pk=pk) if pk else Company()
+    is_edit = bool(pk)
+
+    form = CompanyForm(request.POST or None, instance=company)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        action = "atualizado" if is_edit else "cadastrado"
+        messages.success(request, f"Cliente {action} com sucesso.")
+        return redirect("core:client_list")
+
+    return render(
+        request,
+        "core/client_form.html",
+        {
+            "form": form,
+            "company": company if is_edit else None,
+        },
+    )
 
 
 @login_required

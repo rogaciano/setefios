@@ -1,6 +1,7 @@
 ﻿from decimal import Decimal
 
 from django.test import TestCase
+from django.urls import reverse
 
 from accounts.models import User
 from core.models import Company, Participant, ParticipantCompany, Supplier
@@ -284,3 +285,29 @@ class WebpicServiceTests(TestCase):
         self.assertEqual(self.product.description, "TECIDO TESTE ATUALIZADO")
         self.assertEqual(self.variant.barcode, "999")
 
+
+
+class WebpicDashboardViewTests(WebpicServiceTests):
+    def setUp(self):
+        super().setUp()
+        self.client.force_login(self.user)
+
+    def test_webpic_order_payload_returns_saved_payload(self):
+        self.order.webpic_payload = {"Codigo": "6", "Produtos": [{"Codigo": "7890001112223"}]}
+        self.order.save(update_fields=["webpic_payload", "updated_at"])
+
+        response = self.client.get(reverse("integrations:webpic_order_payload", args=[self.order.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["Codigo"], "6")
+        self.assertEqual(response.json()["Produtos"][0]["Codigo"], "7890001112223")
+
+    def test_webpic_order_response_returns_saved_response(self):
+        self.order.webpic_response = {"error": "Falha", "Mensagem": "Funcionario nao existe."}
+        self.order.save(update_fields=["webpic_response", "updated_at"])
+
+        response = self.client.get(reverse("integrations:webpic_order_response", args=[self.order.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["error"], "Falha")
+        self.assertEqual(response.json()["Mensagem"], "Funcionario nao existe.")

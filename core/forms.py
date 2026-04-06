@@ -1,7 +1,7 @@
 ﻿from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
-from .models import Supplier, SupplierImportProfile
+from .models import Company, Supplier, SupplierImportProfile
 
 
 BASE_INPUT_CLASS = (
@@ -57,6 +57,43 @@ def _checkbox_widget():
 
 def _select_widget():
     return forms.Select(attrs={"class": BASE_INPUT_CLASS})
+
+
+class CompanyForm(forms.ModelForm):
+    class Meta:
+        model = Company
+        fields = (
+            "legal_name",
+            "trade_name",
+            "cnpj",
+            "state_registration",
+            "phone",
+            "email",
+            "street",
+            "number",
+            "complement",
+            "district",
+            "postal_code",
+            "city",
+            "state",
+            "is_active",
+        )
+        widgets = {
+            "legal_name": _text_widget("Razao social do cliente"),
+            "trade_name": _text_widget("Nome fantasia"),
+            "cnpj": _text_widget("00.000.000/0000-00"),
+            "state_registration": _text_widget("Inscricao estadual"),
+            "phone": _text_widget("(00) 00000-0000"),
+            "email": _email_widget("contato@cliente.com"),
+            "street": _text_widget("Rua / Avenida"),
+            "number": _text_widget("Numero"),
+            "complement": _text_widget("Complemento"),
+            "district": _text_widget("Bairro"),
+            "postal_code": _text_widget("00000-000"),
+            "city": _text_widget("Cidade"),
+            "state": _text_widget("UF"),
+            "is_active": _checkbox_widget(),
+        }
 
 
 class SupplierForm(forms.ModelForm):

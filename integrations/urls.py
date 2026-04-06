@@ -7,4 +7,5 @@ app_name = "integrations"
 urlpatterns = [
     path("webpic/", views.webpic_dashboard, name="webpic_dashboard"),
     path("webpic/payload/<int:pk>/", views.webpic_order_payload, name="webpic_order_payload"),
+    path("webpic/response/<int:pk>/", views.webpic_order_response, name="webpic_order_response"),
 ]

@@ -24,10 +24,6 @@
         }
 
         @media print {
-            .print-toolbar {
-                display: none;
-            }
-
             body {
                 background: #fff;
             }
@@ -41,32 +37,19 @@
 </head>
 <body class="min-h-screen bg-sand px-4 py-6 text-ink sm:px-6">
     <div class="mx-auto max-w-7xl">
-        <header class="print-toolbar mb-6 flex flex-col gap-4 rounded-[2rem] border border-stone-200 bg-white/80 px-6 py-5 shadow-panel lg:flex-row lg:items-center lg:justify-between">
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-stone-500">Etiquetas</p>
-                <h1 class="mt-2 font-display text-3xl font-bold text-ink">{{ label_title }}</h1>
-                {% if label_subtitle %}<p class="mt-2 text-sm text-stone-600">{{ label_subtitle }}</p>{% endif %}
-            </div>
-            <div class="flex gap-3">
-                <button type="button" onclick="window.print()" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Imprimir</button>
-                <button type="button" onclick="window.close()" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Fechar</button>
-            </div>
-        </header>
-
         <main class="label-sheet">
             {% for roll in rolls %}
                 <article class="label-card glass-panel rounded-[2rem] p-5">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">Rolo de tecido</p>
+                            <p class="text-xs font-semibold uppercase tracking-[0.22em] text-stone-500">Und de tecido</p>
                             <h2 class="mt-2 font-display text-2xl font-bold text-ink">{{ roll.identifier }}</h2>
                             <p class="mt-1 text-sm text-stone-600">{{ roll.variant.product.reference }} | {{ roll.variant.product.description }}</p>
                             <p class="mt-1 text-sm text-stone-600">{{ roll.variant.color.name }} | {{ roll.unit_display }}</p>
                         </div>
                         <div class="rounded-3xl border border-stone-200 bg-white/80 px-4 py-3 text-right">
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Saldo</p>
-                            <p class="mt-2 font-display text-2xl font-bold text-forest">{{ roll.available_quantity|floatformat:3 }}</p>
-                            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{{ roll.unit_code }}</p>
+                            <p class="font-display text-2xl font-bold text-forest">{{ roll.available_quantity|floatformat:3 }}</p>
+                            <p class="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{{ roll.unit_code }}</p>
                         </div>
                     </div>
 

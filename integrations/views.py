@@ -99,9 +99,22 @@ def webpic_order_payload(request, pk):
     config = WebpicConfiguration.get_solo()
     order = get_object_or_404(Order, pk=pk)
 
+    if order.webpic_payload:
+        return JsonResponse(order.webpic_payload, json_dumps_params={"ensure_ascii": False, "indent": 2})
+
     try:
         payload = WebpicService(config).build_order_payload(order)
     except WebpicServiceError as exc:
         return JsonResponse({"error": str(exc)}, status=400)
 
     return JsonResponse(payload, json_dumps_params={"ensure_ascii": False, "indent": 2})
+
+
+@login_required
+def webpic_order_response(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+
+    if not order.webpic_response:
+        return JsonResponse({"error": "Pedido ainda nao possui retorno salvo da Webpic."}, status=404)
+
+    return JsonResponse(order.webpic_response, json_dumps_params={"ensure_ascii": False, "indent": 2})

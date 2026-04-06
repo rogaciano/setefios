@@ -280,8 +280,12 @@ def _normalize_roll_scan_code(raw_code):
     if not code:
         return ""
     code = code.replace(" ", "")
-    if code.startswith("ROLO:"):
-        code = code.split(":", 1)[1]
+    if code.startswith("ROLO"):
+        for separator in (":", "Ç"):
+            prefix = f"ROLO{separator}"
+            if code.startswith(prefix):
+                code = code.split(separator, 1)[1]
+                break
     return code.strip()
 
 
