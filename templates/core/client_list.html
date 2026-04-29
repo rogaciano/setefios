@@ -29,6 +29,7 @@
                         <th class="px-4 py-3 font-semibold">CNPJ</th>
                         <th class="px-4 py-3 font-semibold">Cidade</th>
                         <th class="px-4 py-3 font-semibold">Email</th>
+                        <th class="px-4 py-3 font-semibold">Contatos</th>
                         <th class="px-4 py-3 font-semibold">Status</th>
                         <th class="px-4 py-3 font-semibold"></th>
                     </tr>
@@ -42,6 +43,12 @@
                             <td class="px-4 py-4">{% if client.city %}{{ client.city }}/{{ client.state }}{% else %}-{% endif %}</td>
                             <td class="px-4 py-4">{{ client.email|default:'-' }}</td>
                             <td class="px-4 py-4">
+                                <a href="{% url 'core:client_participants' client.pk %}" class="inline-flex items-center gap-1 rounded-2xl border border-stone-300 px-3 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">
+                                    <span>{{ client.participants.count }}</span>
+                                    <span>contato(s)</span>
+                                </a>
+                            </td>
+                            <td class="px-4 py-4">
                                 {% if client.is_active %}
                                     <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Ativo</span>
                                 {% else %}
@@ -54,7 +61,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="7" class="px-4 py-10 text-center text-stone-500">Nenhum cliente cadastrado ainda.</td>
+                            <td colspan="8" class="px-4 py-10 text-center text-stone-500">Nenhum cliente cadastrado ainda.</td>
                         </tr>
                     {% endfor %}
                 </tbody>

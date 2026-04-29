@@ -235,9 +235,16 @@ class ParticipantForm(forms.ModelForm):
 
 
 class ParticipantCompanyForm(forms.ModelForm):
+    company = forms.ModelChoiceField(
+        queryset=Company.objects.filter(is_active=True).order_by("trade_name", "legal_name"),
+        required=True,
+        widget=_select_widget(),
+        label="Cliente"
+    )
+    
     class Meta:
         model = ParticipantCompany
-        fields = ("is_primary",)
+        fields = ("company", "is_primary",)
         widgets = {
             "is_primary": _checkbox_widget(),
         }
