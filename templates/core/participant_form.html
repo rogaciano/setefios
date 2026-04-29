@@ -2,9 +2,15 @@
 
 {% block title %}{% if participant %}Editar contato{% else %}Novo contato{% endif %} | Sistema de Vendas{% endblock %}
 {% block eyebrow %}Cadastros{% endblock %}
-{% block page_title %}{% if participant %}Editar contato{% else %}Novo contato{% endif %}{% endblock %}
+{% block page_title %}{% if participant %}Editar contato{% else %}Novo contato{% if initial_client %} para {{ initial_client.trade_name|default:initial_client.legal_name }}{% endif %}{% endblock %}
 
 {% block content %}
+    {% if initial_client %}
+        <div class="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-700">
+            <strong>Atenção:</strong> Este contato será vinculado automaticamente ao cliente <strong>{{ initial_client.trade_name|default:initial_client.legal_name }}</strong>.
+        </div>
+    {% endif %}
+    
     <form method="post" class="grid gap-6 xl:grid-cols-[1fr_0.32fr]">
         {% csrf_token %}
         <section class="space-y-6">

@@ -197,11 +197,21 @@ def participant_form(request, pk=None):
     participant = get_object_or_404(Participant, pk=pk) if pk else Participant()
     is_edit = bool(pk)
     
+    # Verificar se há um cliente pré-selecionado via GET parameter
+    client_id = request.GET.get("client")
+    initial_company = None
+    if client_id and not is_edit:
+        try:
+            initial_company = Company.objects.get(pk=client_id, is_active=True)
+        except Company.DoesNotExist:
+            pass
+    
     form = ParticipantForm(request.POST or None, instance=participant)
     company_formset = ParticipantCompanyFormSet(
         request.POST or None,
         instance=participant,
         prefix="companies",
+        initial=[{"company": initial_company}] if initial_company else None,
     )
     
     if request.method == "POST" and form.is_valid() and company_formset.is_valid():
@@ -210,6 +220,10 @@ def participant_form(request, pk=None):
         company_formset.save()
         action = "atualizado" if is_edit else "cadastrado"
         messages.success(request, f"Contato {action} com sucesso.")
+        
+        # Se veio de um cliente específico, redirecionar de volta para a página de contatos dele
+        if client_id and not is_edit:
+            return redirect("core:client_participants", client_pk=client_id)
         return redirect("core:participant_list")
     
     return render(
@@ -219,6 +233,7 @@ def participant_form(request, pk=None):
             "form": form,
             "participant": participant if is_edit else None,
             "company_formset": company_formset,
+            "initial_client": initial_company,
         },
     )
 
