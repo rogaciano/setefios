@@ -1,7 +1,7 @@
 ﻿from django import forms
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
-from .models import Company, Supplier, SupplierImportProfile
+from .models import Company, Supplier, SupplierImportProfile, Participant, ParticipantCompany
 
 
 BASE_INPUT_CLASS = (
@@ -209,6 +209,65 @@ class BaseSupplierImportProfileFormSet(BaseInlineFormSet):
             if signature in signatures:
                 raise forms.ValidationError("Existe mais de um perfil de importacao com a mesma assinatura para este fornecedor.")
             signatures.add(signature)
+
+
+class ParticipantForm(forms.ModelForm):
+    class Meta:
+        model = Participant
+        fields = (
+            "name",
+            "email",
+            "phone",
+            "notes",
+            "is_representative",
+            "commission_percentage",
+            "is_active",
+        )
+        widgets = {
+            "name": _text_widget("Nome do contato"),
+            "email": _email_widget("email@contato.com"),
+            "phone": _text_widget("(00) 00000-0000"),
+            "notes": _textarea_widget(rows=3, placeholder="Observações sobre o contato"),
+            "is_representative": _checkbox_widget(),
+            "commission_percentage": _text_widget("0.00"),
+            "is_active": _checkbox_widget(),
+        }
+
+
+class ParticipantCompanyForm(forms.ModelForm):
+    class Meta:
+        model = ParticipantCompany
+        fields = ("is_primary",)
+        widgets = {
+            "is_primary": _checkbox_widget(),
+        }
+
+
+class BaseParticipantCompanyFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        primary_count = 0
+        
+        for form in self.forms:
+            if not hasattr(form, "cleaned_data"):
+                continue
+            if form.cleaned_data.get("DELETE"):
+                continue
+            if form.cleaned_data.get("is_primary"):
+                primary_count += 1
+        
+        if primary_count > 1:
+            raise forms.ValidationError("Apenas um contato pode ser marcado como principal.")
+
+
+ParticipantCompanyFormSet = inlineformset_factory(
+    Participant,
+    ParticipantCompany,
+    form=ParticipantCompanyForm,
+    formset=BaseParticipantCompanyFormSet,
+    extra=1,
+    can_delete=True,
+)
 
 
 SupplierImportProfileFormSet = inlineformset_factory(

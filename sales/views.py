@@ -15,6 +15,9 @@ from django.utils import timezone
 
 from core.models import Supplier, SupplierImportProfile
 
+from integrations.models import WebpicConfiguration
+from integrations.services import WebpicService, WebpicServiceError
+
 from .forms import (
     OrderForm,
     OrderItemFormSet,
@@ -842,6 +845,30 @@ def _analyze_uploaded_document(uploaded_file):
 
 @login_required
 def product_list(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "import_webpic_products":
+            config = WebpicConfiguration.get_solo()
+            try:
+                service = WebpicService(config)
+                result = service.sync_products(user=request.user)
+                report = result["report"]
+                messages.success(
+                    request,
+                    (
+                        "Importação concluída: "
+                        f"{report['imported_total']} novo(s), "
+                        f"{report['updated_total']} atualizado(s) e "
+                        f"{report['skipped_total']} ignorado(s). "
+                        f"Processados sem preço: {report['processed_without_price_total']}. "
+                        f"Sem preço válido ignorados: {report['skipped_no_price']}. "
+                        f"Sem grade: {report['skipped_no_grades']}."
+                    ),
+                )
+            except WebpicServiceError as exc:
+                messages.error(request, str(exc))
+            return redirect("sales:product_list")
+
     query = request.GET.get("q", "").strip()
     products = (
         Product.objects.all()

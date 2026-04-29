@@ -18,6 +18,11 @@
                     <button type="submit" class="rounded-2xl border border-stone-300 px-4 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Buscar</button>
                 </form>
                 <a href="{% url 'sales:product_create' %}" class="inline-flex items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Novo produto</a>
+                <form method="post" class="inline-flex">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="import_webpic_products">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Importar Produtos Webpic</button>
+                </form>
             </div>
         </div>
 

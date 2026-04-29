@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if participant %}Editar contato{% else %}Novo contato{% endif %} | Sistema de Vendas{% endblock %}
+{% block eyebrow %}Cadastros{% endblock %}
+{% block page_title %}{% if participant %}Editar contato{% else %}Novo contato{% endif %}{% endblock %}
+
+{% block content %}
+    <form method="post" class="grid gap-6 xl:grid-cols-[1fr_0.32fr]">
+        {% csrf_token %}
+        <section class="space-y-6">
+            <article class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <h3 class="font-display text-xl font-bold text-ink mb-6">Dados do contato</h3>
+                
+                <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="xl:col-span-2">
+                        <label class="text-sm font-semibold text-stone-700">Nome</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}<p class="mt-2 text-sm text-red-600">{{ form.name.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Telefone</label>
+                        {{ form.phone }}
+                        {% if form.phone.errors %}<p class="mt-2 text-sm text-red-600">{{ form.phone.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    <div class="xl:col-span-2">
+                        <label class="text-sm font-semibold text-stone-700">Email</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}<p class="mt-2 text-sm text-red-600">{{ form.email.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label class="text-sm font-semibold text-stone-700">Comissão (%)</label>
+                        {{ form.commission_percentage }}
+                        {% if form.commission_percentage.errors %}<p class="mt-2 text-sm text-red-600">{{ form.commission_percentage.errors|join:', ' }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="text-sm font-semibold text-stone-700">Observações</label>
+                    {{ form.notes }}
+                    {% if form.notes.errors %}<p class="mt-2 text-sm text-red-600">{{ form.notes.errors|join:', ' }}</p>{% endif %}
+                </div>
+            </article>
+
+            <article class="glass-panel rounded-[2rem] p-6 sm:p-8">
+                <h3 class="font-display text-xl font-bold text-ink mb-6">Vinculos com clientes</h3>
+                
+                {{ company_formset.management_form }}
+                
+                <div class="space-y-4" id="companies-formset">
+                    {% for form in company_formset %}
+                        <div class="border border-stone-200 rounded-2xl p-4 bg-white/70">
+                            {% for hidden in form.hidden_fields %}
+                                {{ hidden }}
+                            {% endfor %}
+                            
+                            <div class="grid gap-4 md:grid-cols-2">
+                                <div>
+                                    <label class="text-sm font-semibold text-stone-700">Cliente</label>
+                                    {{ form.company }}
+                                    {% if form.company.errors %}<p class="mt-2 text-sm text-red-600">{{ form.company.errors|join:', ' }}</p>{% endif %}
+                                </div>
+                                <div class="flex items-center">
+                                    <label class="flex items-center gap-3 text-sm text-stone-700">
+                                        {{ form.is_primary }}
+                                        <span>Contato principal</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {% if form.DELETE %}
+                                <div class="mt-3">
+                                    <label class="flex items-center gap-3 text-sm text-stone-700">
+                                        {{ form.DELETE }}
+                                        <span>Remover vinculo</span>
+                                    </label>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% empty %}
+                        <p class="text-stone-500 text-center py-8">Nenhum vinculo cadastrado.</p>
+                    {% endfor %}
+                </div>
+            </article>
+        </section>
+
+        <aside class="space-y-6">
+            <section class="glass-panel rounded-[2rem] p-6">
+                <h2 class="font-display text-xl font-bold text-ink">Configurações</h2>
+                
+                <div class="mt-5 space-y-4">
+                    <label class="flex items-center gap-3 text-sm text-stone-700">
+                        {{ form.is_representative }}
+                        <span>
+                            <span class="block font-semibold text-ink">Representante</span>
+                            <span class="mt-1 block text-stone-500">Pode ser selecionado como representante em pedidos</span>
+                        </span>
+                    </label>
+                    
+                    <label class="flex items-center gap-3 text-sm text-stone-700">
+                        {{ form.is_active }}
+                        <span>
+                            <span class="block font-semibold text-ink">Contato ativo</span>
+                            <span class="mt-1 block text-stone-500">Disponível para seleção em novos pedidos</span>
+                        </span>
+                    </label>
+                </div>
+                
+                <button type="submit" class="mt-6 inline-flex w-full items-center justify-center rounded-2xl bg-clay px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#a94f26]">Salvar contato</button>
+                <a href="{% url 'core:participant_list' %}" class="mt-3 inline-flex w-full items-center justify-center rounded-2xl border border-stone-300 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-100">Voltar</a>
+            </section>
+            
+            <section class="glass-panel rounded-[2rem] p-6 text-sm text-stone-600">
+                <h2 class="font-display text-xl font-bold text-ink">Uso do contato</h2>
+                <p class="mt-3">Os contatos cadastrados aqui ficam disponíveis para seleção como comprador e representante nos pedidos.</p>
+                <p class="mt-3">Vincule o contato a um ou mais clientes para que ele apareça nas opções correspondentes.</p>
+            </section>
+        </aside>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Adicionar classe CSS aos campos de empresa
+    const companySelects = document.querySelectorAll('select[name*="company"]');
+    companySelects.forEach(select => {
+        select.className = 'mt-2 block w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200';
+    });
+});
+</script>
+{% endblock %}

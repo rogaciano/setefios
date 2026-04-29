@@ -10,8 +10,14 @@ from django.views.generic import RedirectView, TemplateView
 
 from sales.models import Order, Product
 
-from .forms import CompanyForm, SupplierForm, SupplierImportProfileFormSet
-from .models import Company, Supplier
+from .forms import (
+    CompanyForm, 
+    SupplierForm, 
+    SupplierImportProfileFormSet,
+    ParticipantForm,
+    ParticipantCompanyFormSet,
+)
+from .models import Company, Supplier, Participant, ParticipantCompany
 
 
 class HomeRedirectView(RedirectView):
@@ -148,5 +154,85 @@ def supplier_form(request, pk=None):
             "form": form,
             "supplier": supplier if is_edit else None,
             "profile_formset": profile_formset,
+        },
+    )
+
+
+@login_required
+def participant_list(request):
+    query = request.GET.get("q", "").strip()
+    company_id = request.GET.get("company", "")
+    
+    participants = Participant.objects.all().prefetch_related("companies")
+    
+    if company_id:
+        participants = participants.filter(companies__id=company_id)
+    
+    if query:
+        participants = participants.filter(
+            Q(name__icontains=query)
+            | Q(email__icontains=query)
+            | Q(phone__icontains=query)
+        )
+    
+    participants = participants.distinct().order_by("name")
+    
+    # Obter empresas para filtro
+    companies = Company.objects.filter(is_active=True).order_by("trade_name", "legal_name")
+    
+    return render(
+        request,
+        "core/participant_list.html",
+        {
+            "participants": participants,
+            "companies": companies,
+            "query": query,
+            "selected_company": company_id,
+        },
+    )
+
+
+@login_required
+def participant_form(request, pk=None):
+    participant = get_object_or_404(Participant, pk=pk) if pk else Participant()
+    is_edit = bool(pk)
+    
+    form = ParticipantForm(request.POST or None, instance=participant)
+    company_formset = ParticipantCompanyFormSet(
+        request.POST or None,
+        instance=participant,
+        prefix="companies",
+    )
+    
+    if request.method == "POST" and form.is_valid() and company_formset.is_valid():
+        saved_participant = form.save()
+        company_formset.instance = saved_participant
+        company_formset.save()
+        action = "atualizado" if is_edit else "cadastrado"
+        messages.success(request, f"Contato {action} com sucesso.")
+        return redirect("core:participant_list")
+    
+    return render(
+        request,
+        "core/participant_form.html",
+        {
+            "form": form,
+            "participant": participant if is_edit else None,
+            "company_formset": company_formset,
+        },
+    )
+
+
+@login_required
+def client_participants(request, client_pk):
+    client = get_object_or_404(Company, pk=client_pk)
+    participants = Participant.objects.filter(companies=client).prefetch_related("companies")
+    
+    return render(
+        request,
+        "core/client_participants.html",
+        {
+            "client": client,
+            "participants": participants,
         },
     )
