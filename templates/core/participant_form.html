@@ -50,7 +50,7 @@
                 {{ company_formset.management_form }}
                 
                 <div class="space-y-4" id="companies-formset">
-                    {% for form in company_formset %}
+                    {% for form in company_formset.forms %}
                         <div class="border border-stone-200 rounded-2xl p-4 bg-white/70">
                             {% for hidden in form.hidden_fields %}
                                 {{ hidden }}
@@ -79,9 +79,13 @@
                                 </div>
                             {% endif %}
                         </div>
-                    {% empty %}
-                        <p class="text-stone-500 text-center py-8">Nenhum vinculo cadastrado.</p>
                     {% endfor %}
+                </div>
+                
+                <div class="mt-4">
+                    <button type="button" class="inline-flex items-center justify-center rounded-2xl border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-100" onclick="addCompanyForm()">
+                        + Adicionar vinculo com cliente
+                    </button>
                 </div>
             </article>
         </section>
@@ -130,5 +134,41 @@ document.addEventListener('DOMContentLoaded', function() {
         select.className = 'mt-2 block w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200';
     });
 });
+
+function addCompanyForm() {
+    const formset = document.getElementById('companies-formset');
+    const managementForm = document.querySelector('input[name="companies-TOTAL_FORMS"]');
+    const totalForms = parseInt(managementForm.value);
+    
+    // Criar novo formulário baseado no primeiro
+    const firstForm = formset.querySelector('div.border');
+    const newForm = firstForm.cloneNode(true);
+    
+    // Limpar valores
+    newForm.querySelectorAll('input, select').forEach(input => {
+        if (input.type === 'hidden') {
+            input.value = '';
+        } else if (input.type === 'checkbox') {
+            input.checked = false;
+        } else {
+            input.value = '';
+        }
+    });
+    
+    // Atualizar índices
+    newForm.innerHTML = newForm.innerHTML.replace(/companies-\d+/g, `companies-${totalForms}`);
+    
+    // Adicionar ao formset
+    formset.appendChild(newForm);
+    
+    // Atualizar total de formulários
+    managementForm.value = totalForms + 1;
+    
+    // Aplicar estilos ao novo select
+    const newSelect = newForm.querySelector('select[name*="company"]');
+    if (newSelect) {
+        newSelect.className = 'mt-2 block w-full rounded-2xl border border-stone-300 bg-white px-4 py-3 text-sm text-stone-900 shadow-sm outline-none transition focus:border-orange-500 focus:ring-2 focus:ring-orange-200';
+    }
+}
 </script>
 {% endblock %}
