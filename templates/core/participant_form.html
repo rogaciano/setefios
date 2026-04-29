@@ -2,7 +2,7 @@
 
 {% block title %}{% if participant %}Editar contato{% else %}Novo contato{% endif %} | Sistema de Vendas{% endblock %}
 {% block eyebrow %}Cadastros{% endblock %}
-{% block page_title %}{% if participant %}Editar contato{% else %}Novo contato{% if initial_client %} para {{ initial_client.trade_name|default:initial_client.legal_name }}{% endif %}{% endblock %}
+{% block page_title %}{% if participant %}Editar contato{% else %}{% if initial_client %}Novo contato para {{ initial_client.trade_name|default:initial_client.legal_name }}{% else %}Novo contato{% endif %}{% endif %}{% endblock %}
 
 {% block content %}
     {% if initial_client %}
